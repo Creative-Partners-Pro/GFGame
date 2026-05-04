@@ -231,10 +231,12 @@
     <main class="flex-1 relative p-4 flex gap-4 overflow-hidden">
 
         <!-- Игровое поле -->
-        <div class="flex-1 h-full rounded-xl custom-scrollbar flex items-center justify-center bg-gray-900 border border-gray-700 shadow-inner relative">
+        <div class="flex-1 h-full rounded-xl custom-scrollbar flex items-center justify-center bg-gray-900 border border-gray-700 shadow-inner relative overflow-hidden">
             <div id="map-container">
-                <svg id="svg-lines"></svg>
-                <div id="cells-layer"></div>
+                <div id="map-zoom-layer" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: transform 0.8s ease;">
+                    <svg id="svg-lines"></svg>
+                    <div id="cells-layer"></div>
+                </div>
             </div>
 
 
@@ -254,10 +256,23 @@
             </div>
         </div>
 
+
+        <!-- Тултип с информацией о клетке -->
+        <div id="cell-tooltip" class="fixed hidden bg-gray-800 border-2 border-yellow-500 rounded-xl p-4 shadow-2xl z-[100] text-sm w-64 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px] transition-opacity duration-200">
+            <h3 id="tt-title" class="text-lg font-bold text-yellow-400 border-b border-gray-600 pb-1 mb-2">Локация</h3>
+            <div id="tt-content" class="space-y-1 text-gray-300">
+                <p><span class="text-gray-500">Тип:</span> <span id="tt-type" class="text-white">Обычная</span></p>
+                <p><span class="text-gray-500">Победа:</span> +<span id="tt-win" class="text-green-400 font-bold">0</span> pts</p>
+                <p><span class="text-gray-500">Поражение:</span> -<span id="tt-loss" class="text-red-400 font-bold">0</span> pts</p>
+                <p><span class="text-gray-500">Сложность:</span> <span id="tt-diff" class="text-purple-400">Легко</span></p>
+                <p id="tt-repeat" class="text-blue-400 font-bold mt-2 pt-2 border-t border-gray-600 hidden">Можно повторить <i class="fa-solid fa-rotate-right"></i></p>
+            </div>
+        </div>
+
     </main>
 
     <!-- Модальное окно: Бросок кубиков -->
-    <div id="modal-dice" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="modal-dice" onclick="if(event.target === this) closeDiceModal()" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-gray-800 border-4 border-blue-500 rounded-3xl w-full max-w-md shadow-2xl p-8 text-center relative overflow-hidden">
             <div class="absolute inset-0 bg-blue-900/20 animate-pulse pointer-events-none"></div>
             <h2 class="text-3xl text-white font-bold mb-8 relative z-10">Бросок кубиков</h2>
@@ -479,16 +494,20 @@
                 let hasTask = (!isStart && !isBoss) ? (Math.random() * 100 < taskPct) : false;
                 let type = hasTask ? taskTypes[Math.floor(Math.random() * taskTypes.length)] : 'None';
 
+                let diffs = ['Легко', 'Нормально', 'Сложно', 'Безумие'];
                 cellsData.push({
                     cell_id: id,
-                    zone_name: "Зона " + Math.ceil(id / 10),
+                    zone_name: isStart ? "Лавка Чудес" : (isBoss ? "Странногедон" : "Зона " + Math.ceil(id / 10)),
                     task_type: type,
                     min_points: hasTask ? 10 + Math.floor(id / 5) : 0,
                     max_points: hasTask ? 20 + Math.floor(id / 2) : 0,
-                    required_item: id === 14 ? 'grappling_hook' : null, // Пример требования
+                    penalty_points: hasTask ? 5 + Math.floor(id / 4) : 0,
+                    is_repeatable: hasTask && Math.random() > 0.7,
+                    difficulty: hasTask ? diffs[Math.floor(Math.random() * diffs.length)] : '—',
+                    required_item: id === 14 ? 'grappling_hook' : null,
                     locked_description: id === 14 ? "Для прохода дальше требуется Абордажный крюк!" : null,
-                    coordinates: { x: 0, y: 0 }, // Заполнится шаблоном
-                    connections: !isBoss ? [id + 1] : [] // По умолчанию к следующей клетке
+                    coordinates: { x: 0, y: 0 },
+                    connections: !isBoss ? [id + 1] : []
                 });
             }
 
@@ -526,13 +545,34 @@
                 el.innerText = cell.cell_id;
                 el.id = `cell-${cell.cell_id}`;
 
-                let titleStr = `Клетка ${cell.cell_id}\n`;
-                if(cssClass === 'cell-task') titleStr += `Задание: ${cell.task_type}`;
-                else if(cssClass === 'cell-empty') titleStr += `Безопасная зона`;
-                else if(cssClass === 'cell-shop') titleStr += `Магазин Стэна`;
-                else if(cssClass === 'cell-boss') titleStr += `Финальный Босс`;
 
-                el.title = titleStr;
+                // Тултип логика
+                el.addEventListener('mouseenter', (e) => {
+                    if (isEditingMap || isLinkingMap || isAddingMap || isRemovingMap || activeDragEl) return;
+
+                    const tooltip = document.getElementById('cell-tooltip');
+                    const cellData = cellsData.find(c => c.cell_id === cell.cell_id);
+                    if(!cellData) return;
+
+                    document.getElementById('tt-title').innerText = `${cellData.zone_name} (Клетка ${cellData.cell_id})`;
+                    document.getElementById('tt-type').innerText = cellData.task_type === 'None' ? 'Отдых' : cellData.task_type;
+                    document.getElementById('tt-win').innerText = cellData.max_points;
+                    document.getElementById('tt-loss').innerText = cellData.penalty_points || 0;
+                    document.getElementById('tt-diff').innerText = cellData.difficulty || '—';
+
+                    const repeatEl = document.getElementById('tt-repeat');
+                    if(cellData.is_repeatable) repeatEl.classList.remove('hidden');
+                    else repeatEl.classList.add('hidden');
+
+                    const rect = el.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                    tooltip.style.top = `${rect.top - 10}px`;
+                    tooltip.classList.remove('hidden');
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    document.getElementById('cell-tooltip').classList.add('hidden');
+                });
                 cellsLayer.appendChild(el);
                 cellElements[cell.cell_id] = el;
             });
@@ -559,11 +599,12 @@
             if (icon) {
                 token.innerText = icon;
             }
-            mapContainer.appendChild(token);
+            document.getElementById('map-zoom-layer').appendChild(token);
         }
 
         // --- УНИВЕРСАЛЬНАЯ СИСТЕМА DRAG & DROP ---
         let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, isAddingMap = false, isRemovingMap = false, linkStartCellId = null;
+        let validMoves = new Set();
 
         mapContainer.addEventListener('mousedown', (e) => {
             const tokenEl = e.target.closest('.token');
@@ -577,7 +618,8 @@
 
                 cellsData.push({
                     cell_id: nextId,
-                    zone_name: "Зона", task_type: "Physical", min_points: 10, max_points: 20,
+                    zone_name: "Новая Зона", task_type: "Physical", min_points: 10, max_points: 20,
+                    penalty_points: 5, is_repeatable: false, difficulty: 'Нормально',
                     required_item: null, locked_description: null,
                     coordinates: { x: (x/rect.width)*100, y: (y/rect.height)*100 },
                     connections: []
@@ -820,7 +862,9 @@
                             // Support loading new cells that didn't exist in current session initially
                             cellsData.push({
                                 cell_id: savedCell.id,
-                                zone_name: "Зона", task_type: "None", min_points: 0, max_points: 0, required_item: null, locked_description: null,
+                                zone_name: "Зона", task_type: "None", min_points: 0, max_points: 0,
+                                penalty_points: 0, is_repeatable: false, difficulty: '—',
+                                required_item: null, locked_description: null,
                                 coordinates: savedCell.coords, connections: savedCell.connections || []
                             });
                         }
@@ -982,9 +1026,18 @@
             }
 
             // Highlight final possible destinations
+            validMoves = currentNodes;
             currentNodes.forEach(id => {
                 if(cellElements[id]) cellElements[id].classList.add('highlight-move');
             });
+
+            // Zoom effect
+            const startCell = cellsData.find(c => c.cell_id === startPos);
+            if (startCell) {
+                const zoomLayer = document.getElementById('map-zoom-layer');
+                zoomLayer.style.transformOrigin = `${startCell.coordinates.x}% ${startCell.coordinates.y}%`;
+                zoomLayer.style.transform = 'scale(1.3)';
+            }
         }
 
         function finalizeRoll() {
@@ -1009,8 +1062,19 @@
         }
 
         function handleTokenDrop(teamId, targetCell) {
-            Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
             const team = gameState[teamId];
+
+            // Allow moving tokens freely in map editor mode, or restrict otherwise
+            if (!isEditingMap && validMoves.size > 0 && !validMoves.has(targetCell.cell_id)) {
+                showAlert("Недопустимый ход", "Вы можете переместиться только на подсвеченные клетки.");
+                updateMapDrawings();
+                return;
+            }
+
+            Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
+            validMoves.clear();
+            document.getElementById('map-zoom-layer').style.transform = 'scale(1)'; // Reset zoom
+
             if(team.pos === targetCell.cell_id) { updateMapDrawings(); return; }
             if (targetCell.required_item && !team.inventory.includes(targetCell.required_item)) {
                 showAlert("Доступ закрыт", targetCell.locked_description);
