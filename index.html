@@ -77,8 +77,8 @@
         /* Фишки команд */
         .token {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: 100px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -166,7 +166,7 @@
     <header class="glass-panel p-4 flex justify-between items-center shadow-lg z-20 h-24">
         <!-- Команда Диппера -->
         <div id="hud-dipper" class="flex items-center gap-4 bg-blue-900/50 p-3 rounded-lg border-2 border-blue-500 w-1/4 transition-all">
-            <div class="w-12 h-12 flex items-center justify-center"><img src="assets/icons/dipper.webp" alt="Dipper" class="w-full h-full object-contain drop-shadow-lg"></div>
+            <div class="w-16 h-16 flex items-center justify-center"><img src="assets/icons/dipper.webp" alt="Dipper" class="w-full h-full object-contain drop-shadow-lg"></div>
             <div>
                 <h2 class="text-xl text-blue-300">Команда Диппера</h2>
                 <div class="flex gap-4 text-sm mt-1">
@@ -193,6 +193,9 @@
                 <button onclick="openMapSettings()" class="bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded-full text-sm shadow transition border border-gray-500">
                     <i class="fa-solid fa-map"></i> Редактор
                 </button>
+                <button onclick="toggleFullscreen()" id="btn-fullscreen" class="bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded-full text-sm shadow transition border border-gray-500">
+                    <i class="fa-solid fa-expand"></i> Во весь экран
+                </button>
                 <button id="btn-shop" onclick="openShop()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-1 rounded-full text-sm shadow transition border border-purple-400">
                     <i class="fa-solid fa-store"></i> Магазин
                 </button>
@@ -208,7 +211,7 @@
                     <span title="Магические поинты"><span id="mabel-pts">0</span>/93 <i class="fa-solid fa-star text-yellow-400"></i></span>
                 </div>
             </div>
-            <div class="w-12 h-12 flex items-center justify-center"><img src="assets/icons/mabel.webp" alt="Mabel" class="w-full h-full object-contain drop-shadow-lg"></div>
+            <div class="w-16 h-16 flex items-center justify-center"><img src="assets/icons/mabel.webp" alt="Mabel" class="w-full h-full object-contain drop-shadow-lg"></div>
         </div>
     </header>
 
@@ -276,18 +279,28 @@
                 <div>
                     <label class="block text-sm text-gray-400 mb-2">Шаблоны расстановки клеток:</label>
                     <div class="flex gap-2">
-                        <button onclick="applyLayoutPreset('snake')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow">Змейка</button>
-                        <button onclick="applyLayoutPreset('spiral')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow">Спираль</button>
-                        <button onclick="applyLayoutPreset('border')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow">Рамка</button>
+                        <button onclick="applyLayoutPreset('snake')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Змейка</button>
+                        <button onclick="applyLayoutPreset('spiral')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Спираль</button>
+                        <button onclick="applyLayoutPreset('border')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Рамка</button>
+                        <button onclick="applyLayoutPreset('clear')" class="flex-1 bg-red-900 hover:bg-red-800 text-white py-2 rounded shadow text-xs">Сброс</button>
                     </div>
                 </div>
 
                 <!-- Режим редактирования -->
-                <div class="pt-4 border-t border-gray-700 text-center">
-                    <button id="btn-toggle-edit" onclick="toggleEditMode()" class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-bold w-full shadow-lg transition">
-                        <i class="fa-solid fa-arrows-up-down-left-right"></i> Включить ручное перемещение
-                    </button>
-                    <p class="text-xs text-gray-400 mt-2">Позволяет перетаскивать клетки мышью под ваш рисунок карты.</p>
+                <div class="pt-4 border-t border-gray-700 text-center flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <button id="btn-toggle-edit" onclick="toggleEditMode()" class="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-lg font-bold shadow-lg transition text-sm">
+                            <i class="fa-solid fa-arrows-up-down-left-right"></i> Перемещение
+                        </button>
+                        <button id="btn-toggle-link" onclick="toggleLinkMode()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg font-bold shadow-lg transition text-sm">
+                            <i class="fa-solid fa-link"></i> Режим связей
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveMapLayout()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-save"></i> Сохранить карту</button>
+                        <button onclick="loadMapLayout()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-download"></i> Загрузить карту</button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Режим связей: Кликните на одну клетку, затем на другую, чтобы соединить их (или удалить связь).</p>
                 </div>
             </div>
         </div>
@@ -354,8 +367,19 @@
         const mapContainer = document.getElementById('map-container');
         const cellsLayer = document.getElementById('cells-layer');
         const svgLines = document.getElementById('svg-lines');
-        const pathLine = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        svgLines.appendChild(pathLine);
+
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+                document.getElementById('btn-fullscreen').innerHTML = '<i class="fa-solid fa-compress"></i> Свернуть';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('btn-fullscreen').innerHTML = '<i class="fa-solid fa-expand"></i> Во весь экран';
+            }
+        }
 
         // --- 1. СТАРТ ИГРЫ И ГЕНЕРАЦИЯ КЛЕТОК ---
         let weirdmageddonInterval = null;
@@ -427,7 +451,8 @@
                     max_points: hasTask ? 20 + Math.floor(id / 2) : 0,
                     required_item: id === 14 ? 'grappling_hook' : null, // Пример требования
                     locked_description: id === 14 ? "Для прохода дальше требуется Абордажный крюк!" : null,
-                    coordinates: { x: 0, y: 0 } // Заполнится шаблоном
+                    coordinates: { x: 0, y: 0 }, // Заполнится шаблоном
+                    connections: !isBoss ? [id + 1] : [] // По умолчанию к следующей клетке
                 });
             }
 
@@ -438,6 +463,12 @@
             startTimer(timerMins);
 
             initMapDOM();
+
+            // Check if there is a saved layout to use instead of the preset
+            const saved = localStorage.getItem('gravityFallsMapLayout');
+            if(saved && confirm("Найдена сохраненная конфигурация карты. Загрузить ее?")) {
+                loadMapLayout();
+            }
             logEvent(`Игра началась! Поле сгенерировано: ${totalCells} клеток, вероятность заданий ${taskPct}%.`);
             updateHUDStyle();
         }
@@ -493,11 +524,36 @@
         }
 
         // --- УНИВЕРСАЛЬНАЯ СИСТЕМА DRAG & DROP ---
-        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false;
+        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, linkStartCellId = null;
 
         mapContainer.addEventListener('mousedown', (e) => {
             const tokenEl = e.target.closest('.token');
             const cellEl = e.target.closest('.cell');
+
+            if (isLinkingMap && cellEl) {
+                const cellId = parseInt(cellEl.innerText);
+                if (!linkStartCellId) {
+                    linkStartCellId = cellId;
+                    cellEl.classList.add('bg-purple-300');
+                } else {
+                    if (linkStartCellId !== cellId) {
+                        const startCell = cellsData.find(c => c.cell_id === linkStartCellId);
+                        if (!startCell.connections) startCell.connections = [];
+
+                        // Toggle connection
+                        const idx = startCell.connections.indexOf(cellId);
+                        if (idx > -1) {
+                            startCell.connections.splice(idx, 1);
+                        } else {
+                            startCell.connections.push(cellId);
+                        }
+                        updateMapDrawings();
+                    }
+                    cellElements[linkStartCellId].classList.remove('bg-purple-300');
+                    linkStartCellId = null;
+                }
+                return;
+            }
 
             if (tokenEl && !isEditingMap) {
                 activeDragEl = tokenEl; dragType = 'token'; dragId = tokenEl.id.replace('token-', '');
@@ -549,18 +605,38 @@
         function updateMapDrawings() {
             if(cellsData.length === 0) return;
             const rect = mapContainer.getBoundingClientRect();
-            let polyPoints = [];
+
+            svgLines.innerHTML = ''; // Clear existing lines
 
             cellsData.forEach(cell => {
-                polyPoints.push(`${(cell.coordinates.x / 100) * rect.width},${(cell.coordinates.y / 100) * rect.height}`);
+                // Update cell positions
                 const el = cellElements[cell.cell_id];
                 if(el) {
                     el.style.left = `${cell.coordinates.x}%`;
                     el.style.top = `${cell.coordinates.y}%`;
                 }
-            });
 
-            pathLine.setAttribute('points', polyPoints.join(' '));
+                // Draw connections
+                if (cell.connections && cell.connections.length > 0) {
+                    const startX = (cell.coordinates.x / 100) * rect.width;
+                    const startY = (cell.coordinates.y / 100) * rect.height;
+
+                    cell.connections.forEach(targetId => {
+                        const targetCell = cellsData.find(c => c.cell_id === targetId);
+                        if (targetCell) {
+                            const endX = (targetCell.coordinates.x / 100) * rect.width;
+                            const endY = (targetCell.coordinates.y / 100) * rect.height;
+
+                            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            line.setAttribute('x1', startX);
+                            line.setAttribute('y1', startY);
+                            line.setAttribute('x2', endX);
+                            line.setAttribute('y2', endY);
+                            svgLines.appendChild(line);
+                        }
+                    });
+                }
+            });
 
             // Токены
             const dCell = cellsData[gameState.dipper.pos - 1];
@@ -611,9 +687,65 @@
                     else { x = 5; y = 95 - ((p-0.8)/0.2)*90; }
                     cellsData[i].coordinates = { x, y };
                 }
+            } else if (type === 'clear') {
+                for (let i = 0; i < total; i++) {
+                    cellsData[i].coordinates = { x: 5, y: 5 };
+                    cellsData[i].connections = [];
+                }
             }
             updateMapDrawings();
             logEvent(`Применен шаблон карты: ${type}`);
+        }
+
+
+        function toggleLinkMode() {
+            if(isEditingMap) toggleEditMode(); // Can't do both
+            isLinkingMap = !isLinkingMap;
+            linkStartCellId = null;
+            const btn = document.getElementById('btn-toggle-link');
+            if (isLinkingMap) {
+                btn.classList.replace('bg-purple-600', 'bg-green-600');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Завершить связи';
+                Object.values(cellElements).forEach(el => {
+                    el.style.cursor = 'crosshair';
+                    el.classList.add('border-purple-500');
+                });
+            } else {
+                btn.classList.replace('bg-green-600', 'bg-purple-600');
+                btn.innerHTML = '<i class="fa-solid fa-link"></i> Режим связей';
+                Object.values(cellElements).forEach(el => {
+                    el.style.cursor = '';
+                    el.classList.remove('border-purple-500', 'bg-purple-300');
+                });
+            }
+        }
+
+        function saveMapLayout() {
+            const layout = cellsData.map(c => ({ id: c.cell_id, coords: c.coordinates, connections: c.connections }));
+            localStorage.setItem('gravityFallsMapLayout', JSON.stringify(layout));
+            showAlert("Успех", "Карта сохранена в браузере!");
+        }
+
+        function loadMapLayout() {
+            const saved = localStorage.getItem('gravityFallsMapLayout');
+            if (saved) {
+                try {
+                    const layout = JSON.parse(saved);
+                    layout.forEach(savedCell => {
+                        const cell = cellsData.find(c => c.cell_id === savedCell.id);
+                        if(cell) {
+                            cell.coordinates = savedCell.coords;
+                            cell.connections = savedCell.connections || [];
+                        }
+                    });
+                    updateMapDrawings();
+                    showAlert("Загружено", "Карта успешно загружена!");
+                } catch(e) {
+                    showAlert("Ошибка", "Не удалось загрузить карту.");
+                }
+            } else {
+                showAlert("Ошибка", "Сохраненная карта не найдена.");
+            }
         }
 
         function toggleEditMode() {
@@ -683,10 +815,8 @@
 
             const team = gameState[gameState.currentTurn];
             let move = d1 + d2;
-            let expectedPos = team.pos + move;
-            if (expectedPos > cellsData.length) expectedPos = cellsData.length;
 
-            let msg = `Выпало: ${d1} и ${d2}. Переместите фишку на клетку ${expectedPos}.`;
+            let msg = `Выпало: ${d1} и ${d2}. У вас ${move} шагов!`;
             document.getElementById('dice-result').innerText = msg;
 
             document.getElementById('btn-dice-close').classList.remove('hidden');
