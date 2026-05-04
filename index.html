@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
-        
+
         body {
             font-family: 'Russo One', sans-serif;
             background-color: #1a202c;
@@ -61,7 +61,7 @@
         .cell-empty { background-color: #68d391; border: 3px solid #276749; color: #1c4532; }
         .cell-boss { background-color: #e53e3e; border: 3px solid #822727; color: white; width: 70px; height: 70px; font-size: 1.5rem; z-index: 15; }
         .cell-shop { background-color: #4299e1; border: 3px solid #2b6cb0; color: white; z-index: 15; }
-        
+
         .cell.editing {
             cursor: move;
             border-color: #ef4444 !important;
@@ -77,33 +77,30 @@
         /* Фишки команд */
         .token {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 50px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            color: white;
             transform: translate(-50%, -50%);
             cursor: grab;
             z-index: 50;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
             transition: top 0.3s ease, left 0.3s ease;
             user-select: none;
         }
 
         .token.dragging { transition: none; cursor: grabbing; z-index: 100 !important; }
 
-        #token-dipper { background-color: #3182ce; border: 3px solid #ffffff; background-image: url('assets/icons/dipper.webp'); background-size: cover; background-position: center; }
-        #token-mabel { background-color: #ed64a6; border: 3px solid #ffffff; background-image: url('assets/icons/mabel.webp'); background-size: cover; background-position: center; }
+        #token-dipper { background-image: url('assets/icons/dipper.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        #token-mabel { background-image: url('assets/icons/mabel.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 
         /* Соединительные линии */
         #svg-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
         line, polyline { fill: none; stroke: rgba(255, 255, 255, 0.4); stroke-width: 4; stroke-dasharray: 10 5; }
-        
+
         .glass-panel { background: rgba(45, 55, 72, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        
+
         /* Выдвижная панель лога */
         #log-tab {
             transition: transform 0.3s ease-in-out;
@@ -126,7 +123,7 @@
         <div class="bg-gray-800 border-4 border-yellow-600 rounded-2xl w-full max-w-xl shadow-2xl p-8 transform transition-all">
             <h1 class="text-4xl text-yellow-500 tracking-wider text-center mb-6" style="text-shadow: 2px 2px 4px #000;">GRAVITY FALLS</h1>
             <h2 class="text-xl text-center text-gray-300 mb-8 border-b border-gray-700 pb-4">Настройки новой игры</h2>
-            
+
             <div class="space-y-6">
                 <!-- Количество клеток -->
                 <div>
@@ -143,6 +140,13 @@
                         <span id="pct-val" class="text-yellow-400 font-bold w-12 text-right">70%</span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">Остальные клетки будут "Пустыми" (безопасными).</p>
+                </div>
+
+                <!-- Таймер Странногедона -->
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Странногедон (минуты):</label>
+                    <input type="number" id="set-timer" value="30" min="1" max="120" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-lg focus:border-red-500 outline-none">
+                    <p class="text-xs text-gray-500 mt-1">Время до начала Странногедона (конец игры).</p>
                 </div>
 
                 <!-- Загрузка фона карты -->
@@ -162,7 +166,7 @@
     <header class="glass-panel p-4 flex justify-between items-center shadow-lg z-20 h-24">
         <!-- Команда Диппера -->
         <div id="hud-dipper" class="flex items-center gap-4 bg-blue-900/50 p-3 rounded-lg border-2 border-blue-500 w-1/4 transition-all">
-            <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white overflow-hidden"><img src="assets/icons/dipper.webp" alt="Dipper" class="w-full h-full object-cover"></div>
+            <div class="w-12 h-12 flex items-center justify-center"><img src="assets/icons/dipper.webp" alt="Dipper" class="w-full h-full object-contain drop-shadow-lg"></div>
             <div>
                 <h2 class="text-xl text-blue-300">Команда Диппера</h2>
                 <div class="flex gap-4 text-sm mt-1">
@@ -174,10 +178,18 @@
 
         <!-- Центральная панель -->
         <div class="flex flex-col items-center w-2/4">
-            <div id="turn-indicator" class="px-6 py-2 rounded-full bg-blue-600 font-bold text-lg shadow-lg border-2 border-white uppercase tracking-wide">
-                Ход: Команда Диппера
+            <div class="flex items-center gap-4">
+                <div id="turn-indicator" class="px-6 py-2 rounded-full bg-blue-600 font-bold text-lg shadow-lg border-2 border-white uppercase tracking-wide">
+                    Ход: Команда Диппера
+                </div>
+                <div id="weirdmageddon-timer" class="px-4 py-2 rounded-full bg-red-900/80 font-bold text-lg shadow-lg border-2 border-red-500 text-red-200" title="До Странногедона осталось">
+                    <i class="fa-solid fa-clock"></i> <span>30:00</span>
+                </div>
             </div>
             <div class="flex gap-2 mt-2">
+                <button onclick="openDiceModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-1 rounded-full text-sm font-bold shadow transition border border-yellow-400">
+                    <i class="fa-solid fa-dice"></i> Бросить кубики
+                </button>
                 <button onclick="openMapSettings()" class="bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded-full text-sm shadow transition border border-gray-500">
                     <i class="fa-solid fa-map"></i> Редактор
                 </button>
@@ -196,13 +208,13 @@
                     <span title="Магические поинты"><span id="mabel-pts">0</span>/93 <i class="fa-solid fa-star text-yellow-400"></i></span>
                 </div>
             </div>
-            <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white overflow-hidden"><img src="assets/icons/mabel.webp" alt="Mabel" class="w-full h-full object-cover"></div>
+            <div class="w-12 h-12 flex items-center justify-center"><img src="assets/icons/mabel.webp" alt="Mabel" class="w-full h-full object-contain drop-shadow-lg"></div>
         </div>
     </header>
 
     <!-- Основная рабочая область -->
     <main class="flex-1 relative p-4 flex gap-4 overflow-hidden">
-        
+
         <!-- Игровое поле -->
         <div class="flex-1 h-full rounded-xl custom-scrollbar flex items-center justify-center bg-gray-900 border border-gray-700 shadow-inner relative">
             <div id="map-container">
@@ -210,10 +222,7 @@
                 <div id="cells-layer"></div>
             </div>
 
-            <!-- Плавающая кнопка броска кубиков -->
-            <button onclick="openDiceModal()" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.5)] border-2 border-white text-xl z-30 hover:scale-105 active:scale-95 transition-all">
-                <i class="fa-solid fa-dice"></i> Бросить кубики
-            </button>
+
         </div>
 
         <!-- Вкладка Лога событий -->
@@ -221,7 +230,7 @@
             <button onclick="toggleLog()" class="absolute -left-12 top-1/2 transform -translate-y-1/2 bg-yellow-600 text-black w-12 h-32 rounded-l-xl font-bold flex items-center justify-center shadow-lg border-y-2 border-l-2 border-yellow-400 hover:bg-yellow-500">
                 <span style="writing-mode: vertical-rl; text-orientation: mixed;">ЛОГ ИГРЫ</span>
             </button>
-            
+
             <div class="p-4 border-b border-gray-700 bg-gray-800 rounded-tl-xl">
                 <h3 class="text-xl text-yellow-400 font-bold"><i class="fa-solid fa-scroll"></i> История событий</h3>
             </div>
@@ -237,14 +246,14 @@
         <div class="bg-gray-800 border-4 border-blue-500 rounded-3xl w-full max-w-md shadow-2xl p-8 text-center relative overflow-hidden">
             <div class="absolute inset-0 bg-blue-900/20 animate-pulse pointer-events-none"></div>
             <h2 class="text-3xl text-white font-bold mb-8 relative z-10">Бросок кубиков</h2>
-            
+
             <div class="flex justify-center gap-6 mb-8 relative z-10">
                 <div id="dice1" class="w-24 h-24 bg-white text-black text-5xl flex items-center justify-center rounded-2xl shadow-inner font-bold border-4 border-gray-300 transform transition-transform">?</div>
                 <div id="dice2" class="w-24 h-24 bg-white text-black text-5xl flex items-center justify-center rounded-2xl shadow-inner font-bold border-4 border-gray-300 transform transition-transform">?</div>
             </div>
-            
+
             <div id="dice-result" class="text-xl text-yellow-300 font-bold min-h-[3rem] mb-6 relative z-10"></div>
-            
+
             <button id="btn-roll-action" onclick="performRoll()" class="relative z-10 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-2xl border-2 border-blue-300">
                 БРОСИТЬ!
             </button>
@@ -261,7 +270,7 @@
                 <h2 class="text-2xl text-white font-bold"><i class="fa-solid fa-map-location-dot"></i> Редактор расстановки</h2>
                 <button onclick="closeMapSettings()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-2xl"></i></button>
             </div>
-            
+
             <div class="space-y-6">
                 <!-- Шаблоны расстановки -->
                 <div>
@@ -349,6 +358,39 @@
         svgLines.appendChild(pathLine);
 
         // --- 1. СТАРТ ИГРЫ И ГЕНЕРАЦИЯ КЛЕТОК ---
+        let weirdmageddonInterval = null;
+        let weirdmageddonSeconds = 0;
+
+        function startTimer(minutes) {
+            weirdmageddonSeconds = minutes * 60;
+            updateTimerDisplay();
+
+            if (weirdmageddonInterval) clearInterval(weirdmageddonInterval);
+
+            weirdmageddonInterval = setInterval(() => {
+                if (weirdmageddonSeconds > 0) {
+                    weirdmageddonSeconds--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(weirdmageddonInterval);
+                    showAlert("СТРАННОГЕДОН!", "Время вышло! Билл Шифр захватил этот мир. ИГРА ОКОНЧЕНА!");
+                    // Optionally disable game actions here
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const el = document.querySelector('#weirdmageddon-timer span');
+            if (!el) return;
+            const m = Math.floor(weirdmageddonSeconds / 60);
+            const s = weirdmageddonSeconds % 60;
+            el.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+            if (weirdmageddonSeconds < 300) { // Less than 5 mins
+                document.getElementById('weirdmageddon-timer').classList.add('animate-pulse', 'border-red-400');
+            }
+        }
+
         function startGame() {
             totalCells = parseInt(document.getElementById('set-total').value) || 50;
             if (totalCells < 10) totalCells = 10;
@@ -372,7 +414,7 @@
                 let id = i + 1;
                 let isStart = (id === 1);
                 let isBoss = (id === totalCells);
-                
+
                 // Определение: есть ли задание
                 let hasTask = (!isStart && !isBoss) ? (Math.random() * 100 < taskPct) : false;
                 let type = hasTask ? taskTypes[Math.floor(Math.random() * taskTypes.length)] : 'None';
@@ -391,7 +433,10 @@
 
             document.getElementById('modal-start').classList.add('hidden');
             document.getElementById('game-log').innerHTML = ''; // Очистка лога
-            
+
+            const timerMins = parseInt(document.getElementById('set-timer').value) || 30;
+            startTimer(timerMins);
+
             initMapDOM();
             logEvent(`Игра началась! Поле сгенерировано: ${totalCells} клеток, вероятность заданий ${taskPct}%.`);
             updateHUDStyle();
@@ -405,7 +450,7 @@
             cellsData.forEach(cell => {
                 const el = document.createElement('div');
                 let cssClass = 'cell-empty'; // по умолчанию пустая
-                
+
                 if (cell.cell_id === totalCells) cssClass = 'cell-boss';
                 else if (cell.cell_id === 1) cssClass = 'cell-shop';
                 else if (cell.task_type !== 'None') cssClass = 'cell-task';
@@ -413,13 +458,13 @@
                 el.className = `cell ${cssClass}`;
                 el.innerText = cell.cell_id;
                 el.id = `cell-${cell.cell_id}`;
-                
+
                 let titleStr = `Клетка ${cell.cell_id}\n`;
                 if(cssClass === 'cell-task') titleStr += `Задание: ${cell.task_type}`;
                 else if(cssClass === 'cell-empty') titleStr += `Безопасная зона`;
                 else if(cssClass === 'cell-shop') titleStr += `Магазин Стэна`;
                 else if(cssClass === 'cell-boss') titleStr += `Финальный Босс`;
-                
+
                 el.title = titleStr;
                 cellsLayer.appendChild(el);
                 cellElements[cell.cell_id] = el;
@@ -428,7 +473,7 @@
             // Токены
             if (!document.getElementById('token-dipper')) createTokenDOM('dipper', '');
             if (!document.getElementById('token-mabel')) createTokenDOM('mabel', '');
-            
+
             // Сброс позиций
             gameState.dipper.pos = 1;
             gameState.mabel.pos = 1;
@@ -505,7 +550,7 @@
             if(cellsData.length === 0) return;
             const rect = mapContainer.getBoundingClientRect();
             let polyPoints = [];
-            
+
             cellsData.forEach(cell => {
                 polyPoints.push(`${(cell.coordinates.x / 100) * rect.width},${(cell.coordinates.y / 100) * rect.height}`);
                 const el = cellElements[cell.cell_id];
@@ -596,7 +641,7 @@
             document.getElementById('dice1').innerText = '?';
             document.getElementById('dice2').innerText = '?';
             document.getElementById('dice-result').innerText = 'Нажмите кнопку, чтобы бросить кубики!';
-            
+
             // Сброс стилей кубиков
             const d1 = document.getElementById('dice1'), d2 = document.getElementById('dice2');
             d1.style.transform = 'rotate(0deg)'; d2.style.transform = 'rotate(0deg)';
@@ -607,10 +652,10 @@
         function performRoll() {
             const btnRoll = document.getElementById('btn-roll-action');
             btnRoll.classList.add('hidden'); // Скрываем кнопку броска, чтобы не нажимали дважды
-            
+
             const d1El = document.getElementById('dice1');
             const d2El = document.getElementById('dice2');
-            
+
             // Анимация броска
             let counter = 0;
             const interval = setInterval(() => {
@@ -631,7 +676,7 @@
             const d2 = Math.floor(Math.random() * 6) + 1;
             const d1El = document.getElementById('dice1');
             const d2El = document.getElementById('dice2');
-            
+
             d1El.innerText = d1; d2El.innerText = d2;
             d1El.style.transform = 'rotate(0deg) scale(1)';
             d2El.style.transform = 'rotate(0deg) scale(1)';
@@ -643,7 +688,7 @@
 
             let msg = `Выпало: ${d1} и ${d2}. Переместите фишку на клетку ${expectedPos}.`;
             document.getElementById('dice-result').innerText = msg;
-            
+
             document.getElementById('btn-dice-close').classList.remove('hidden');
             logEvent(`${team.name} бросает кубики: ${d1} и ${d2}. Ждем перемещения.`);
         }
@@ -689,10 +734,10 @@
         function updateHUDStyle() {
             const isDipper = gameState.currentTurn === 'dipper';
             const team = gameState[gameState.currentTurn];
-            
+
             const hd = document.getElementById('hud-dipper');
             const hm = document.getElementById('hud-mabel');
-            
+
             if(isDipper) {
                 hd.classList.replace('border-transparent', 'border-blue-500');
                 hm.classList.replace('border-pink-500', 'border-transparent');
@@ -725,7 +770,7 @@
             document.getElementById('task-title').innerText = `Клетка ${cell.cell_id} — Задание`;
             document.getElementById('modal-task').classList.remove('hidden');
             const iframe = document.getElementById('task-iframe');
-            
+
             iframe.srcdoc = `
                 <html lang="ru">
                 <head><script src="https://cdn.tailwindcss.com"><\/script></head>
@@ -745,8 +790,8 @@
                     document.getElementById(`${gameState.currentTurn}-pts`).innerText = gameState[gameState.currentTurn].points;
                     showAlert("Успех!", `Получено ${e.data.pts} магических поинтов.`);
                     logEvent(`${gameState[gameState.currentTurn].name} успешно проходит задание (+${e.data.pts} pts).`);
-                } else { 
-                    showAlert("Провал", "Очки не начислены."); 
+                } else {
+                    showAlert("Провал", "Очки не начислены.");
                     logEvent(`${gameState[gameState.currentTurn].name} проваливает задание.`);
                 }
                 switchTurn();
