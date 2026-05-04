@@ -90,6 +90,18 @@
             user-select: none;
         }
 
+
+        @keyframes highlight-glow {
+            0% { box-shadow: 0 0 5px #4ade80, inset 0 0 5px #4ade80; border-color: #4ade80; }
+            50% { box-shadow: 0 0 20px #22c55e, inset 0 0 10px #22c55e; border-color: #22c55e; }
+            100% { box-shadow: 0 0 5px #4ade80, inset 0 0 5px #4ade80; border-color: #4ade80; }
+        }
+        .highlight-move {
+            animation: highlight-glow 1.5s infinite;
+            cursor: pointer;
+            z-index: 20 !important;
+        }
+
         .token.dragging { transition: none; cursor: grabbing; z-index: 100 !important; }
 
         #token-dipper { background-image: url('assets/icons/dipper.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
@@ -263,6 +275,13 @@
             <button id="btn-dice-close" onclick="closeDiceModal()" class="hidden relative z-10 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-xl border-2 border-green-300">
                 ПЕРЕМЕСТИТЬ ФИШКУ
             </button>
+            <div class="mt-4 pt-4 border-t border-gray-600 relative z-10">
+                <p class="text-sm text-gray-300 mb-2">Или введите офлайн результат:</p>
+                <div class="flex gap-2 justify-center">
+                    <input type="number" id="offline-dice-val" min="1" max="100" class="w-24 bg-gray-900 border border-gray-500 rounded p-2 text-white text-center text-xl font-bold">
+                    <button id="btn-offline-action" onclick="useOfflineDice()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow transition">Применить</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -270,14 +289,26 @@
     <div id="modal-map-settings" class="fixed inset-0 bg-black/80 z-[150] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-gray-800 border-2 border-gray-500 rounded-xl w-full max-w-lg shadow-2xl p-6">
             <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
-                <h2 class="text-2xl text-white font-bold"><i class="fa-solid fa-map-location-dot"></i> Редактор расстановки</h2>
+                <h2 class="text-2xl text-white font-bold"><i class="fa-solid fa-map-location-dot"></i> Редактор карты</h2>
                 <button onclick="closeMapSettings()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-2xl"></i></button>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-4">
+                <!-- Пресеты -->
+                <div class="pb-4 border-b border-gray-700">
+                    <label class="block text-sm text-gray-400 mb-2">Сохраненные пресеты:</label>
+                    <div class="flex gap-2">
+                        <select id="preset-list" class="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                            <option value="">-- Выберите пресет --</option>
+                        </select>
+                        <button onclick="loadSelectedPreset()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Загрузить"><i class="fa-solid fa-download"></i></button>
+                        <button onclick="deleteSelectedPreset()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Удалить"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+
                 <!-- Шаблоны расстановки -->
                 <div>
-                    <label class="block text-sm text-gray-400 mb-2">Шаблоны расстановки клеток:</label>
+                    <label class="block text-sm text-gray-400 mb-2">Автоматические шаблоны:</label>
                     <div class="flex gap-2">
                         <button onclick="applyLayoutPreset('snake')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Змейка</button>
                         <button onclick="applyLayoutPreset('spiral')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Спираль</button>
@@ -289,18 +320,23 @@
                 <!-- Режим редактирования -->
                 <div class="pt-4 border-t border-gray-700 text-center flex flex-col gap-3">
                     <div class="flex gap-2">
-                        <button id="btn-toggle-edit" onclick="toggleEditMode()" class="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-lg font-bold shadow-lg transition text-sm">
-                            <i class="fa-solid fa-arrows-up-down-left-right"></i> Перемещение
+                        <button id="btn-toggle-edit" onclick="toggleEditMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
+                            <i class="fa-solid fa-arrows-up-down-left-right"></i> Двигать
                         </button>
-                        <button id="btn-toggle-link" onclick="toggleLinkMode()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg font-bold shadow-lg transition text-sm">
-                            <i class="fa-solid fa-link"></i> Режим связей
+                        <button id="btn-toggle-link" onclick="toggleLinkMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
+                            <i class="fa-solid fa-link"></i> Связи
+                        </button>
+                        <button id="btn-toggle-add" onclick="toggleAddMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
+                            <i class="fa-solid fa-plus"></i> Клетка
+                        </button>
+                        <button id="btn-toggle-remove" onclick="toggleRemoveMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
+                            <i class="fa-solid fa-minus"></i> Удалить
                         </button>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="saveMapLayout()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-save"></i> Сохранить карту</button>
-                        <button onclick="loadMapLayout()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-download"></i> Загрузить карту</button>
+                        <button onclick="saveMapPreset()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-save"></i> Сохранить пресет</button>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">Режим связей: Кликните на одну клетку, затем на другую, чтобы соединить их (или удалить связь).</p>
+                    <p class="text-xs text-gray-400 mt-1" id="editor-hint">Выберите инструмент для настройки карты.</p>
                 </div>
             </div>
         </div>
@@ -464,16 +500,12 @@
 
             initMapDOM();
 
-            // Check if there is a saved layout to use instead of the preset
-            const saved = localStorage.getItem('gravityFallsMapLayout');
-            if(saved && confirm("Найдена сохраненная конфигурация карты. Загрузить ее?")) {
-                loadMapLayout();
-            }
+
             logEvent(`Игра началась! Поле сгенерировано: ${totalCells} клеток, вероятность заданий ${taskPct}%.`);
             updateHUDStyle();
         }
 
-        function initMapDOM() {
+        function initMapDOM(skipPreset = false) {
             cellsLayer.innerHTML = '';
             cellElements = {};
 
@@ -482,8 +514,12 @@
                 const el = document.createElement('div');
                 let cssClass = 'cell-empty'; // по умолчанию пустая
 
-                if (cell.cell_id === totalCells) cssClass = 'cell-boss';
-                else if (cell.cell_id === 1) cssClass = 'cell-shop';
+                // Keep classes relevant to standard IDs or detect dynamically
+                const isStart = cell.cell_id === 1;
+                const isBoss = cell.cell_id === Math.max(...cellsData.map(c=>c.cell_id));
+
+                if (isBoss) cssClass = 'cell-boss';
+                else if (isStart) cssClass = 'cell-shop';
                 else if (cell.task_type !== 'None') cssClass = 'cell-task';
 
                 el.className = `cell ${cssClass}`;
@@ -509,8 +545,11 @@
             gameState.dipper.pos = 1;
             gameState.mabel.pos = 1;
 
-            // Применяем стартовый шаблон
-            applyLayoutPreset('snake');
+            if (!skipPreset) {
+                applyLayoutPreset('snake');
+            } else {
+                updateMapDrawings();
+            }
         }
 
         function createTokenDOM(id, icon) {
@@ -524,11 +563,42 @@
         }
 
         // --- УНИВЕРСАЛЬНАЯ СИСТЕМА DRAG & DROP ---
-        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, linkStartCellId = null;
+        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, isAddingMap = false, isRemovingMap = false, linkStartCellId = null;
 
         mapContainer.addEventListener('mousedown', (e) => {
             const tokenEl = e.target.closest('.token');
             const cellEl = e.target.closest('.cell');
+            const rect = mapContainer.getBoundingClientRect();
+
+            if (isAddingMap && !tokenEl && !cellEl) {
+                let x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                let y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+                const nextId = cellsData.length > 0 ? Math.max(...cellsData.map(c => c.cell_id)) + 1 : 1;
+
+                cellsData.push({
+                    cell_id: nextId,
+                    zone_name: "Зона", task_type: "Physical", min_points: 10, max_points: 20,
+                    required_item: null, locked_description: null,
+                    coordinates: { x: (x/rect.width)*100, y: (y/rect.height)*100 },
+                    connections: []
+                });
+                initMapDOM(true);
+                toggleAddMode(); toggleAddMode(); // Refresh visual state
+                return;
+            }
+
+            if (isRemovingMap && cellEl) {
+                const cellId = parseInt(cellEl.innerText);
+                cellsData = cellsData.filter(c => c.cell_id !== cellId);
+                cellsData.forEach(c => {
+                    if (c.connections) {
+                        c.connections = c.connections.filter(id => id !== cellId);
+                    }
+                });
+                initMapDOM(true);
+                toggleRemoveMode(); toggleRemoveMode();
+                return;
+            }
 
             if (isLinkingMap && cellEl) {
                 const cellId = parseInt(cellEl.innerText);
@@ -549,13 +619,14 @@
                         }
                         updateMapDrawings();
                     }
-                    cellElements[linkStartCellId].classList.remove('bg-purple-300');
+                    if(cellElements[linkStartCellId]) cellElements[linkStartCellId].classList.remove('bg-purple-300');
                     linkStartCellId = null;
                 }
                 return;
             }
 
             if (tokenEl && !isEditingMap) {
+                Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
                 activeDragEl = tokenEl; dragType = 'token'; dragId = tokenEl.id.replace('token-', '');
                 tokenEl.classList.add('dragging');
             } else if (cellEl && isEditingMap) {
@@ -573,8 +644,11 @@
             activeDragEl.style.left = `${x}px`; activeDragEl.style.top = `${y}px`;
 
             if (dragType === 'cell') {
-                cellsData[dragId - 1].coordinates = { x: (x / rect.width) * 100, y: (y / rect.height) * 100 };
-                updateMapDrawings();
+                const cell = cellsData.find(c => c.cell_id === dragId);
+                if (cell) {
+                    cell.coordinates = { x: (x / rect.width) * 100, y: (y / rect.height) * 100 };
+                    updateMapDrawings();
+                }
             }
         });
 
@@ -639,8 +713,8 @@
             });
 
             // Токены
-            const dCell = cellsData[gameState.dipper.pos - 1];
-            const mCell = cellsData[gameState.mabel.pos - 1];
+            const dCell = cellsData.find(c => c.cell_id === gameState.dipper.pos);
+            const mCell = cellsData.find(c => c.cell_id === gameState.mabel.pos);
             if(dCell && mCell) {
                 const tD = document.getElementById('token-dipper'), tM = document.getElementById('token-mabel');
                 const dPxX = (dCell.coordinates.x / 100) * rect.width, dPxY = (dCell.coordinates.y / 100) * rect.height;
@@ -698,70 +772,132 @@
         }
 
 
-        function toggleLinkMode() {
-            if(isEditingMap) toggleEditMode(); // Can't do both
-            isLinkingMap = !isLinkingMap;
-            linkStartCellId = null;
-            const btn = document.getElementById('btn-toggle-link');
-            if (isLinkingMap) {
-                btn.classList.replace('bg-purple-600', 'bg-green-600');
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Завершить связи';
-                Object.values(cellElements).forEach(el => {
-                    el.style.cursor = 'crosshair';
-                    el.classList.add('border-purple-500');
+
+
+        function loadPresetsList() {
+            const select = document.getElementById('preset-list');
+            select.innerHTML = '<option value="">-- Выберите пресет --</option>';
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_map_presets') || '[]');
+                presets.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.innerText = p.name;
+                    select.appendChild(opt);
                 });
-            } else {
-                btn.classList.replace('bg-green-600', 'bg-purple-600');
-                btn.innerHTML = '<i class="fa-solid fa-link"></i> Режим связей';
-                Object.values(cellElements).forEach(el => {
-                    el.style.cursor = '';
-                    el.classList.remove('border-purple-500', 'bg-purple-300');
-                });
-            }
+            } catch(e) {}
         }
 
-        function saveMapLayout() {
+        function saveMapPreset() {
+            const name = prompt("Введите имя для этого пресета:");
+            if (!name) return;
             const layout = cellsData.map(c => ({ id: c.cell_id, coords: c.coordinates, connections: c.connections }));
-            localStorage.setItem('gravityFallsMapLayout', JSON.stringify(layout));
-            showAlert("Успех", "Карта сохранена в браузере!");
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_map_presets') || '[]');
+                const idx = presets.findIndex(p => p.name === name);
+                if(idx > -1) presets[idx].layout = layout;
+                else presets.push({ name, layout });
+                localStorage.setItem('gf_map_presets', JSON.stringify(presets));
+                loadPresetsList();
+                showAlert("Успех", `Пресет "${name}" сохранен!`);
+            } catch(e) { showAlert("Ошибка", "Не удалось сохранить пресет."); }
         }
 
-        function loadMapLayout() {
-            const saved = localStorage.getItem('gravityFallsMapLayout');
-            if (saved) {
-                try {
-                    const layout = JSON.parse(saved);
-                    layout.forEach(savedCell => {
-                        const cell = cellsData.find(c => c.cell_id === savedCell.id);
+        function loadSelectedPreset() {
+            const name = document.getElementById('preset-list').value;
+            if(!name) { showAlert("Внимание", "Сначала выберите пресет из списка."); return; }
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_map_presets') || '[]');
+                const preset = presets.find(p => p.name === name);
+                if (preset) {
+                    // Update layout
+                    preset.layout.forEach(savedCell => {
+                        let cell = cellsData.find(c => c.cell_id === savedCell.id);
                         if(cell) {
                             cell.coordinates = savedCell.coords;
                             cell.connections = savedCell.connections || [];
+                        } else {
+                            // Support loading new cells that didn't exist in current session initially
+                            cellsData.push({
+                                cell_id: savedCell.id,
+                                zone_name: "Зона", task_type: "None", min_points: 0, max_points: 0, required_item: null, locked_description: null,
+                                coordinates: savedCell.coords, connections: savedCell.connections || []
+                            });
                         }
                     });
-                    updateMapDrawings();
-                    showAlert("Загружено", "Карта успешно загружена!");
-                } catch(e) {
-                    showAlert("Ошибка", "Не удалось загрузить карту.");
+                    // Remove cells not in preset
+                    const savedIds = preset.layout.map(sc => sc.id);
+                    cellsData = cellsData.filter(c => savedIds.includes(c.cell_id));
+                    initMapDOM(true); // Redraw map elements
+                    showAlert("Успех", `Пресет "${name}" загружен!`);
                 }
-            } else {
-                showAlert("Ошибка", "Сохраненная карта не найдена.");
-            }
+            } catch(e) { showAlert("Ошибка", "Не удалось загрузить пресет."); }
+        }
+
+        function deleteSelectedPreset() {
+            const name = document.getElementById('preset-list').value;
+            if(!name) { showAlert("Внимание", "Выберите пресет для удаления."); return; }
+            if(!confirm(`Удалить пресет "${name}"?`)) return;
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_map_presets') || '[]');
+                presets = presets.filter(p => p.name !== name);
+                localStorage.setItem('gf_map_presets', JSON.stringify(presets));
+                loadPresetsList();
+            } catch(e) {}
+        }
+
+
+        function resetAllEditorModes() {
+            isEditingMap = false; isLinkingMap = false; isAddingMap = false; isRemovingMap = false; linkStartCellId = null;
+            document.getElementById('btn-toggle-edit').classList.replace('bg-green-600', 'bg-gray-600');
+            document.getElementById('btn-toggle-link').classList.replace('bg-green-600', 'bg-gray-600');
+            document.getElementById('btn-toggle-add').classList.replace('bg-green-600', 'bg-gray-600');
+            document.getElementById('btn-toggle-remove').classList.replace('bg-green-600', 'bg-gray-600');
+            Object.values(cellElements).forEach(el => { el.style.cursor = ''; el.classList.remove('editing', 'border-purple-500', 'bg-purple-300', 'border-red-500'); });
+            document.getElementById('editor-hint').innerText = "Выберите инструмент для настройки карты.";
         }
 
         function toggleEditMode() {
-            isEditingMap = !isEditingMap;
-            const btn = document.getElementById('btn-toggle-edit');
-            if (isEditingMap) {
-                btn.classList.replace('bg-red-600', 'bg-green-600');
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Завершить редактирование';
+            const wasActive = isEditingMap;
+            resetAllEditorModes();
+            if (!wasActive) {
+                isEditingMap = true;
+                document.getElementById('btn-toggle-edit').classList.replace('bg-gray-600', 'bg-green-600');
                 Object.values(cellElements).forEach(el => el.classList.add('editing'));
-            } else {
-                btn.classList.replace('bg-green-600', 'bg-red-600');
-                btn.innerHTML = '<i class="fa-solid fa-arrows-up-down-left-right"></i> Включить ручное перемещение';
-                Object.values(cellElements).forEach(el => el.classList.remove('editing'));
+                document.getElementById('editor-hint').innerText = "Двигайте клетки мышью.";
             }
         }
-        function openMapSettings() { document.getElementById('modal-map-settings').classList.remove('hidden'); }
+        function toggleLinkMode() {
+            const wasActive = isLinkingMap;
+            resetAllEditorModes();
+            if (!wasActive) {
+                isLinkingMap = true;
+                document.getElementById('btn-toggle-link').classList.replace('bg-gray-600', 'bg-green-600');
+                Object.values(cellElements).forEach(el => { el.style.cursor = 'crosshair'; el.classList.add('border-purple-500'); });
+                document.getElementById('editor-hint').innerText = "Кликните две клетки для связи.";
+            }
+        }
+        function toggleAddMode() {
+            const wasActive = isAddingMap;
+            resetAllEditorModes();
+            if (!wasActive) {
+                isAddingMap = true;
+                document.getElementById('btn-toggle-add').classList.replace('bg-gray-600', 'bg-green-600');
+                document.getElementById('editor-hint').innerText = "Кликните по пустому полю, чтобы добавить клетку.";
+            }
+        }
+        function toggleRemoveMode() {
+            const wasActive = isRemovingMap;
+            resetAllEditorModes();
+            if (!wasActive) {
+                isRemovingMap = true;
+                document.getElementById('btn-toggle-remove').classList.replace('bg-gray-600', 'bg-green-600');
+                Object.values(cellElements).forEach(el => { el.style.cursor = 'pointer'; el.classList.add('border-red-500'); });
+                document.getElementById('editor-hint').innerText = "Кликните по клетке, чтобы удалить её.";
+            }
+        }
+
+        function openMapSettings() { loadPresetsList(); document.getElementById('modal-map-settings').classList.remove('hidden'); }
         function closeMapSettings() { document.getElementById('modal-map-settings').classList.add('hidden'); }
 
         // --- ИГРОВАЯ ЛОГИКА (Бросок и Ход) ---
@@ -803,6 +939,54 @@
             }, 50);
         }
 
+
+        function useOfflineDice() {
+            const val = parseInt(document.getElementById('offline-dice-val').value);
+            if (!val || val < 1) { showAlert("Ошибка", "Введите корректное число."); return; }
+            const d1El = document.getElementById('dice1');
+            const d2El = document.getElementById('dice2');
+            d1El.innerText = val; d2El.innerText = '?';
+            const team = gameState[gameState.currentTurn];
+            let msg = `Офлайн кубики: ${val}. У вас ${val} шагов!`;
+            document.getElementById('dice-result').innerText = msg;
+            document.getElementById('btn-dice-close').classList.remove('hidden');
+            logEvent(`${team.name} вводит результат офлайн: ${val}.`);
+            highlightAvailableMoves(team.pos, val);
+        }
+
+        function highlightAvailableMoves(startPos, steps) {
+            // Remove previous highlights
+            Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
+
+            if (steps === 0) return;
+
+            // BFS to find all exact paths of length `steps`
+            let currentNodes = new Set([startPos]);
+            for(let i=0; i<steps; i++) {
+                let nextNodes = new Set();
+                currentNodes.forEach(nodeId => {
+                    const cell = cellsData.find(c => c.cell_id === nodeId);
+                    if(cell && cell.connections) {
+                        cell.connections.forEach(target => nextNodes.add(target));
+                    }
+                    // Also consider reverse connections for two-way travel?
+                    // Let's make connections bidirectional for pathfinding to allow true graph movement
+                    cellsData.forEach(c => {
+                        if (c.connections && c.connections.includes(nodeId)) {
+                            nextNodes.add(c.cell_id);
+                        }
+                    });
+                });
+                if(nextNodes.size === 0) break; // Dead end
+                currentNodes = nextNodes;
+            }
+
+            // Highlight final possible destinations
+            currentNodes.forEach(id => {
+                if(cellElements[id]) cellElements[id].classList.add('highlight-move');
+            });
+        }
+
         function finalizeRoll() {
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
@@ -821,9 +1005,11 @@
 
             document.getElementById('btn-dice-close').classList.remove('hidden');
             logEvent(`${team.name} бросает кубики: ${d1} и ${d2}. Ждем перемещения.`);
+            highlightAvailableMoves(team.pos, move);
         }
 
         function handleTokenDrop(teamId, targetCell) {
+            Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
             const team = gameState[teamId];
             if(team.pos === targetCell.cell_id) { updateMapDrawings(); return; }
             if (targetCell.required_item && !team.inventory.includes(targetCell.required_item)) {
@@ -836,7 +1022,8 @@
             logEvent(`${team.name} переходит на клетку ${targetCell.cell_id}.`);
 
             // Финал
-            if (targetCell.cell_id === cellsData.length) {
+            const bossId = Math.max(...cellsData.map(c => c.cell_id));
+            if (targetCell.cell_id === bossId) {
                 if (team.superpowers >= 3 && team.points >= 93) showAlert("ФИНАЛ!", "Вы достигли конца с нужными силами! Битва с Биллом!");
                 else { showAlert("Слабоваты", "Нужно 93 поинта и 3 суперсилы."); team.pos = targetCell.cell_id - 1; updateMapDrawings(); }
                 return;
