@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Шумный Дартс: Турнир</title>
+    <style>
+        :root {
+            --ios-bg: #000000;
+            --ios-glass: rgba(30, 30, 30, 0.75);
+            --ios-glass-border: rgba(255, 255, 255, 0.12);
+            --ios-text: #ffffff;
+            --team-blue: #0A84FF;
+            --team-red: #FF453A;
+            --ios-radius: 24px;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Dynamic Background */
+        .background {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1a1a1a, #000000);
+            z-index: -1;
+            transition: background 1s ease;
+        }
+        
+        .bg-blue { background: radial-gradient(circle at 50% 50%, #002b5e, #000000); }
+        .bg-red { background: radial-gradient(circle at 50% 50%, #5e0000, #000000); }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.4s ease;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.95);
+            z-index: 10;
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* Panels */
+        .glass-panel {
+            background: var(--ios-glass);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--ios-glass-border);
+            border-radius: var(--ios-radius);
+            padding: 25px;
+            width: 85%;
+            max-width: 380px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        h1 { font-size: 28px; margin: 0 0 10px 0; }
+        h2 { font-size: 22px; margin: 0 0 15px 0; opacity: 0.9; }
+        h3 { margin: 10px 0; opacity: 0.8; font-weight: 500; }
+
+        /* Inputs & Controls */
+        .control-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 8px; }
+
+        input[type="range"] {
+            width: 100%; -webkit-appearance: none; background: rgba(255,255,255,0.2); height: 6px; border-radius: 3px; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 24px; background: #fff; border-radius: 50%; cursor: pointer;
+        }
+
+        .toggle-group { display: flex; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 4px; gap: 4px; }
+        .toggle-btn {
+            flex: 1; background: transparent; border: none; color: rgba(255,255,255,0.5); padding: 10px;
+            border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.2s;
+        }
+        .toggle-btn.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 600; }
+
+        .btn {
+            background: var(--team-blue); color: white; border: none; padding: 16px; font-size: 17px;
+            font-weight: 600; border-radius: 16px; cursor: pointer; width: 100%; margin-top: 10px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.97); opacity: 0.9; }
+        .btn.secondary { background: rgba(255,255,255,0.15); }
+        .btn.red { background: var(--team-red); }
+
+        /* Dice Grid */
+        .dice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .dice-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+            font-size: 24px; padding: 15px 0; color: white; cursor: pointer;
+        }
+        .dice-btn:active { background: white; color: black; }
+
+        /* HUD */
+        .hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        
+        .score-board {
+            position: absolute; top: 20px; display: flex; justify-content: space-between; width: 90%; left: 5%;
+        }
+        .team-score {
+            text-align: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .team-score.blue { color: var(--team-blue); }
+        .team-score.red { color: var(--team-red); }
+        .score-val { font-size: 24px; font-weight: 800; display: block; }
+        .score-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+        .score-throws { font-size: 12px; opacity: 0.5; margin-top: 4px; }
+
+        .pfl-meter {
+            position: absolute; left: 20px; top: 25%; bottom: 25%; width: 12px;
+            background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden;
+            display: flex; flex-direction: column-reverse;
+        }
+        .pfl-fill { width: 100%; height: 0%; background: #32d74b; transition: height 0.05s; }
+
+        /* Countdown */
+        #countdownLayer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 120px; font-weight: 900; z-index: 50;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none; opacity: 0; transition: opacity 0.3s;
+        }
+
+        /* Power Meter specific */
+        .power-bar-container {
+            width: 100%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin: 20px 0;
+        }
+        .power-bar-fill {
+            height: 100%; width: 0%; background: linear-gradient(90deg, #32d74b, #ffcc00, #ff453a);
+            transition: width 0.1s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="background" id="mainBg"></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="menuScreen" class="screen active">
+        <div class="glass-panel">
+            <h1>🎯 Турнир</h1>
+            
+            <div class="control-group">
+                <label>Бросков на команду</label>
+                <div class="toggle-group" id="throwsSelector">
+                    <button class="toggle-btn" onclick="setThrows(3)">3</button>
+                    <button class="toggle-btn active" onclick="setThrows(5)">5</button>
+                    <button class="toggle-btn" onclick="setThrows(10)">10</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Способ задания силы</label>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="modeVoiceBtn">🎤 Голос</button>
+                    <button class="toggle-btn" id="modeDiceBtn">🎲 Кубик</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Чувствительность микр.</label>
+                <input type="range" id="sensInput" min="1" max="100" value="50">
+            </div>
+
+            <button class="btn" id="startTournamentBtn">Начать Турнир</button>
+        </div>
+    </div>
+
+    <div id="powerScreen" class="screen">
+        <div class="glass-panel">
+            <h2 id="turnTitle" style="color: var(--team-blue)">Ход Синих</h2>
+            <h3 id="powerInstruction">Задайте силу броска</h3>
+            
+            <div id="voicePowerUI">
+                <p>Кричите, чтобы набрать силу!</p>
+                <div class="power-bar-container">
+                    <div id="voicePowerFill" class="power-bar-fill"></div>
+                </div>
+                <div style="font-size: 40px; font-weight: 800; margin-bottom: 20px;" id="voicePowerValue">0%</div>
+                <button class="btn" id="lockPowerBtn">🔒 Бросок!</button>
+            </div>
+
+            <div id="dicePowerUI" style="display: none;">
+                <p>Что выпало на кубике?</p>
+                <div class="dice-grid">
+                    <button class="dice-btn" onclick="setDicePower(1)">1</button>
+                    <button class="dice-btn" onclick="setDicePower(2)">2</button>
+                    <button class="dice-btn" onclick="setDicePower(3)">3</button>
+                    <button class="dice-btn" onclick="setDicePower(4)">4</button>
+                    <button class="dice-btn" onclick="setDicePower(5)">5</button>
+                    <button class="dice-btn" onclick="setDicePower(6)">6</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="countdownLayer">3</div>
+
+    <div id="hudLayer" class="hud">
+        <div class="score-board">
+            <div class="team-score blue" id="hudBlue">
+                <span class="score-label">Синие</span>
+                <span class="score-val" id="scoreBlue">0</span>
+                <div class="score-throws" id="throwsBlue">5 ост.</div>
+            </div>
+            <div class="team-score red" id="hudRed">
+                <span class="score-label">Красные</span>
+                <span class="score-val" id="scoreRed">0</span>
+                <div class="score-throws" id="throwsRed">5 ост.</div>
+            </div>
+        </div>
+        
+        <div class="pfl-meter">
+            <div id="pflFill" class="pfl-fill"></div>
+        </div>
+    </div>
+
+    <div id="resultScreen" class="screen">
+        <div class="glass-panel">
+            <h2 id="resultTitle">Попадание!</h2>
+            <div style="font-size: 60px; font-weight: 800; margin: 10px 0;" id="turnScore">50</div>
+            <p id="turnFeedback">Неплохо</p>
+            <button class="btn" id="nextTurnBtn">Следующий ход</button>
+        </div>
+    </div>
+
+    <div id="endScreen" class="screen">
+        <div class="glass-panel">
+            <h1>🏆 Победитель</h1>
+            <div style="font-size: 80px; margin: 20px 0;" id="winnerText">🔵</div>
+            <h2 id="winnerName">Синие!</h2>
+            <p>Счет: <span id="finalScoreText">120 - 90</span></p>
+            <button class="btn" onclick="location.reload()">Новый турнир</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME CONFIG & STATE ---
+        const config = {
+            sensitivity: 2.0,
+            throwsPerTeam: 5,
+            powerMethod: 'voice', // 'voice' or 'dice'
+            baseFlightTime: 6000, // 6 sec base
+        };
+
+        const state = {
+            phase: 'menu', // menu, power, countdown, flying, result, end
+            currentTeam: 0, // 0 = Blue, 1 = Red
+            scores: [0, 0],
+            throwsLeft: [5, 5],
+            
+            // Flight Physics
+            startTime: 0,
+            flightDuration: 5000,
+            power: 0.5, // 0.0 to 1.0 (affects speed and score multiplier)
+            
+            // Realtime
+            volume: 0,
+            smoothedVolume: 0,
+            crosshairY: 1.0, // 1.0 = Bottom (quiet), 0.0 = Top (loud)
+        };
+
+        // --- AUDIO ENGINE ---
+        let audioCtx, analyser, dataArray;
+        let isAudioInit = false;
+
+        async function initAudio() {
+            if (isAudioInit) return true;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isAudioInit = true;
+                return true;
+            } catch (e) {
+                alert("Нет доступа к микрофону! Игра невозможна.");
+                return false;
+            }
+        }
+
+        function getVolume() {
+            if (!isAudioInit) return 0;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let avg = sum / dataArray.length;
+            return Math.min(Math.max((avg / 128) * config.sensitivity, 0), 1);
+        }
+
+        // --- DOM ELEMENTS ---
+        const screens = {
+            menu: document.getElementById('menuScreen'),
+            power: document.getElementById('powerScreen'),
+            result: document.getElementById('resultScreen'),
+            end: document.getElementById('endScreen')
+        };
+        const countdownEl = document.getElementById('countdownLayer');
+        const hudLayer = document.getElementById('hudLayer');
+        const mainBg = document.getElementById('mainBg');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- GAME FLOW ---
+
+        function setThrows(n) {
+            config.throwsPerTeam = n;
+            document.querySelectorAll('#throwsSelector .toggle-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        document.getElementById('modeVoiceBtn').onclick = () => {
+            config.powerMethod = 'voice';
+            document.getElementById('modeVoiceBtn').classList.add('active');
+            document.getElementById('modeDiceBtn').classList.remove('active');
+        };
+        document.getElementById('modeDiceBtn').onclick = () => {
+            config.powerMethod = 'dice';
+            document.getElementById('modeDiceBtn').classList.add('active');
+            document.getElementById('modeVoiceBtn').classList.remove('active');
+        };
+
+        document.getElementById('startTournamentBtn').onclick = async () => {
+            if (await initAudio()) {
+                state.throwsLeft = [config.throwsPerTeam, config.throwsPerTeam];
+                state.scores = [0, 0];
+                state.currentTeam = 0;
+                updateHud();
+                startTurn();
+            }
+        };
+
+        function startTurn() {
+            // Setup Turn visuals
+            const isBlue = state.currentTeam === 0;
+            mainBg.className = isBlue ? 'background bg-blue' : 'background bg-red';
+            
+            // Switch to Power Screen
+            switchScreen('power');
+            
+            const title = document.getElementById('turnTitle');
+            title.innerText = isBlue ? "Ход СИНИХ" : "Ход КРАСНЫХ";
+            title.style.color = isBlue ? "var(--team-blue)" : "var(--team-red)";
+            
+            const btn = document.getElementById('lockPowerBtn');
+            btn.style.background = isBlue ? "var(--team-blue)" : "var(--team-red)";
+
+            // Toggle Power UI
+            if (config.powerMethod === 'voice') {
+                document.getElementById('voicePowerUI').style.display = 'block';
+                document.getElementById('dicePowerUI').style.display = 'none';
+                state.phase = 'power_voice';
+                requestAnimationFrame(voicePowerLoop);
+            } else {
+                document.getElementById('voicePowerUI').style.display = 'none';
+                document.getElementById('dicePowerUI').style.display = 'block';
+                state.phase = 'power_dice';
+            }
+        }
+
+        // Power Logic
+        function voicePowerLoop() {
+            if (state.phase !== 'power_voice') return;
+            
+            // Calculate current "Power" based on momentary volume
+            let v = getVolume();
+            state.power += (v - state.power) * 0.1; // smooth
+            
+            const pct = Math.floor(state.power * 100);
+            document.getElementById('voicePowerFill').style.width = pct + "%";
+            document.getElementById('voicePowerValue').innerText = pct + "%";
+            
+            requestAnimationFrame(voicePowerLoop);
+        }
+
+        document.getElementById('lockPowerBtn').onclick = () => {
+            // Lock current power
+            startCountdown();
+        };
+
+        function setDicePower(val) {
+            // Map 1-6 to 0.1-1.0
+            state.power = 0.2 + ((val - 1) / 5) * 0.8; 
+            startCountdown();
+        }
+
+        // Countdown
+        function startCountdown() {
+            state.phase = 'countdown';
+            switchScreen(null); // Hide all menus
+            hudLayer.style.display = 'block';
+            
+            // Config flight duration based on power
+            // Higher power = Faster flight (shorter duration)
+            // Power 0.1 = 6000ms, Power 1.0 = 2500ms
+            state.flightDuration = 6500 - (state.power * 3500);
+
+            let count = 3;
+            countdownEl.style.opacity = 1;
+            countdownEl.innerText = count;
+
+            const intv = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.innerText = count;
+                } else {
+                    clearInterval(intv);
+                    countdownEl.innerText = "START";
+                    setTimeout(() => {
+                        countdownEl.style.opacity = 0;
+                        beginFlight();
+                    }, 500);
+                }
+            }, 800);
+        }
+
+        // Flying
+        function beginFlight() {
+            state.phase = 'flying';
+            state.startTime = performance.now();
+            state.smoothedVolume = 0;
+            state.crosshairY = 1.0;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(timestamp) {
+            if (state.phase !== 'flying') return;
+
+            const elapsed = timestamp - state.startTime;
+            const progress = elapsed / state.flightDuration;
+
+            // Physics & Input
+            const vol = getVolume();
+            state.smoothedVolume += (vol - state.smoothedVolume) * 0.15;
+            state.crosshairY = 1.0 - Math.min(state.smoothedVolume, 1.0);
+
+            // Draw
+            drawGame(progress, state.crosshairY);
+            
+            // HUD Update
+            const pflH = Math.min(state.smoothedVolume * 100, 100);
+            document.getElementById('pflFill').style.height = pflH + "%";
+
+            if (progress >= 1.0) {
+                endFlight();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // End Turn
+        function endFlight() {
+            state.phase = 'result';
+            
+            // Calculate accuracy
+            const dist = Math.abs(state.crosshairY - 0.5); // 0.5 is center
+            let baseScore = 0;
+            let text = "";
+
+            if (dist < 0.05) { baseScore = 100; text = "В ЯБЛОЧКО! 🎯"; }
+            else if (dist < 0.15) { baseScore = 75; text = "Отлично! 😎"; }
+            else if (dist < 0.25) { baseScore = 40; text = "Неплохо"; }
+            else if (dist < 0.40) { baseScore = 10; text = "Слабо..."; }
+            else { baseScore = 0; text = "МИМО 🍼"; }
+
+            // Power Multiplier: High power (speed) grants bonus
+            // Multiplier: 1.0 to 1.5x
+            const multiplier = 1 + (state.power * 0.5);
+            const finalScore = Math.floor(baseScore * multiplier);
+
+            // Update State
+            state.scores[state.currentTeam] += finalScore;
+            state.throwsLeft[state.currentTeam]--;
+
+            // UI
+            updateHud();
+            document.getElementById('turnScore').innerText = finalScore;
+            document.getElementById('turnFeedback').innerText = text + (multiplier > 1.2 ? ` (x${multiplier.toFixed(1)} скорость)` : "");
+            
+            switchScreen('result');
+        }
+
+        document.getElementById('nextTurnBtn').onclick = () => {
+            // Check game over
+            if (state.throwsLeft[0] === 0 && state.throwsLeft[1] === 0) {
+                endTournament();
+            } else {
+                // Switch team
+                state.currentTeam = state.currentTeam === 0 ? 1 : 0;
+                // If one team finished early (unlikely with equal throws but possible logic), skip
+                if (state.throwsLeft[state.currentTeam] === 0) {
+                     state.currentTeam = state.currentTeam === 0 ? 1 : 0;
+                }
+                startTurn();
+            }
+        };
+
+        function endTournament() {
+            switchScreen('end');
+            const s1 = state.scores[0];
+            const s2 = state.scores[1];
+            
+            const wText = document.getElementById('winnerText');
+            const wName = document.getElementById('winnerName');
+            
+            if (s1 > s2) {
+                wText.innerText = "🔵";
+                wName.innerText = "Синие Победили!";
+                wName.style.color = "var(--team-blue)";
+            } else if (s2 > s1) {
+                wText.innerText = "🔴";
+                wName.innerText = "Красные Победили!";
+                wName.style.color = "var(--team-red)";
+            } else {
+                wText.innerText = "🤝";
+                wName.innerText = "Ничья!";
+                wName.style.color = "#fff";
+            }
+            
+            document.getElementById('finalScoreText').innerText = `${s1} - ${s2}`;
+        }
+
+        // --- RENDERING ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
+
+        function drawGame(progress, aimYNorm) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Zoom effect (exponential)
+            const zoom = Math.pow(progress, 3);
+            const size = 50 + (Math.min(canvas.width, canvas.height)*0.8) * zoom;
+
+            // Target
+            ctx.font = `${size}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🎯', cx, cy);
+
+            // Crosshair
+            const aimY = aimYNorm * canvas.height;
+            
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            // Scope circle
+            ctx.arc(cx, aimY, 25, 0, Math.PI*2);
+            
+            // Lines
+            ctx.moveTo(cx - 40, aimY); ctx.lineTo(cx + 40, aimY);
+            ctx.moveTo(cx, aimY - 40); ctx.lineTo(cx, aimY + 40);
+            ctx.stroke();
+
+            // Dot
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(cx, aimY, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // --- UTILS ---
+        function switchScreen(name) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            if (name && screens[name]) screens[name].classList.add('active');
+            
+            if (name === 'power' || name === 'result' || name === 'end') {
+                hudLayer.style.display = 'none';
+            }
+        }
+        
+        function updateHud() {
+            document.getElementById('scoreBlue').innerText = state.scores[0];
+            document.getElementById('scoreRed').innerText = state.scores[1];
+            document.getElementById('throwsBlue').innerText = state.throwsLeft[0] + " ост.";
+            document.getElementById('throwsRed').innerText = state.throwsLeft[1] + " ост.";
+            
+            // Active highlighter
+            document.getElementById('hudBlue').style.opacity = state.currentTeam === 0 ? 1 : 0.5;
+            document.getElementById('hudRed').style.opacity = state.currentTeam === 1 ? 1 : 0.5;
+        }
+
+        // Mic Sensitivity slider
+        document.getElementById('sensInput').oninput = (e) => config.sensitivity = e.target.value / 25;
+
+    </script>
+</body>
+</html>
