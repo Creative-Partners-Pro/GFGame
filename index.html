@@ -32,6 +32,7 @@
             background-position: center;
             background-repeat: no-repeat;
             transition: background-image 0.5s ease;
+            background-image: url('assets/map/Игровая карта Гравити Фоллз.webp');
         }
 
         .cell {
@@ -94,8 +95,8 @@
 
         .token.dragging { transition: none; cursor: grabbing; z-index: 100 !important; }
 
-        #token-dipper { background-color: #3182ce; border: 3px solid #ffffff; }
-        #token-mabel { background-color: #ed64a6; border: 3px solid #ffffff; }
+        #token-dipper { background-color: #3182ce; border: 3px solid #ffffff; background-image: url('assets/icons/dipper.webp'); background-size: cover; background-position: center; }
+        #token-mabel { background-color: #ed64a6; border: 3px solid #ffffff; background-image: url('assets/icons/mabel.webp'); background-size: cover; background-position: center; }
 
         /* Соединительные линии */
         #svg-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
@@ -161,7 +162,7 @@
     <header class="glass-panel p-4 flex justify-between items-center shadow-lg z-20 h-24">
         <!-- Команда Диппера -->
         <div id="hud-dipper" class="flex items-center gap-4 bg-blue-900/50 p-3 rounded-lg border-2 border-blue-500 w-1/4 transition-all">
-            <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white">🌲</div>
+            <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white overflow-hidden"><img src="assets/icons/dipper.webp" alt="Dipper" class="w-full h-full object-cover"></div>
             <div>
                 <h2 class="text-xl text-blue-300">Команда Диппера</h2>
                 <div class="flex gap-4 text-sm mt-1">
@@ -195,7 +196,7 @@
                     <span title="Магические поинты"><span id="mabel-pts">0</span>/93 <i class="fa-solid fa-star text-yellow-400"></i></span>
                 </div>
             </div>
-            <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white">🌠</div>
+            <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-2xl shadow-lg border-2 border-white overflow-hidden"><img src="assets/icons/mabel.webp" alt="Mabel" class="w-full h-full object-cover"></div>
         </div>
     </header>
 
@@ -425,8 +426,8 @@
             });
 
             // Токены
-            if (!document.getElementById('token-dipper')) createTokenDOM('dipper', '🌲');
-            if (!document.getElementById('token-mabel')) createTokenDOM('mabel', '🌠');
+            if (!document.getElementById('token-dipper')) createTokenDOM('dipper', '');
+            if (!document.getElementById('token-mabel')) createTokenDOM('mabel', '');
             
             // Сброс позиций
             gameState.dipper.pos = 1;
@@ -440,7 +441,9 @@
             const token = document.createElement('div');
             token.id = `token-${id}`;
             token.className = 'token';
-            token.innerText = icon;
+            if (icon) {
+                token.innerText = icon;
+            }
             mapContainer.appendChild(token);
         }
 
