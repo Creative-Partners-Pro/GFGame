@@ -144,15 +144,7 @@
                     <p class="text-xs text-gray-500 mt-1">От 10 до 100 клеток (включая Старт и Босса).</p>
                 </div>
 
-                <!-- Соотношение заданий -->
-                <div>
-                    <label class="block text-sm text-gray-400 mb-2">Шанс задания на клетке (%):</label>
-                    <div class="flex items-center gap-4">
-                        <input type="range" id="set-task-pct" value="70" min="0" max="100" class="flex-1 accent-yellow-500" oninput="document.getElementById('pct-val').innerText = this.value + '%'">
-                        <span id="pct-val" class="text-yellow-400 font-bold w-12 text-right">70%</span>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">Остальные клетки будут "Пустыми" (безопасными).</p>
-                </div>
+
 
                 <!-- Таймер Странногедона -->
                 <div>
@@ -206,8 +198,11 @@
                     <i class="fa-solid fa-map"></i> Редактор
                 </button>
                 <button onclick="toggleFullscreen()" id="btn-fullscreen" class="bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded-full text-sm shadow transition border border-gray-500">
-                    <i class="fa-solid fa-expand"></i> Во весь экран
+                    <i class="fa-solid fa-expand"></i> Скрин
                 </button>
+                <a href="library.html" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow transition border border-blue-400 flex items-center gap-1">
+                    <i class="fa-solid fa-book"></i> Задания
+                </a>
                 <button id="btn-shop" onclick="openShop()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-1 rounded-full text-sm shadow transition border border-purple-400">
                     <i class="fa-solid fa-store"></i> Магазин
                 </button>
@@ -262,6 +257,7 @@
             <h3 id="tt-title" class="text-lg font-bold text-yellow-400 border-b border-gray-600 pb-1 mb-2">Локация</h3>
             <div id="tt-content" class="space-y-1 text-gray-300">
                 <p><span class="text-gray-500">Тип:</span> <span id="tt-type" class="text-white">Обычная</span></p>
+                <p id="tt-desc-container" class="hidden text-xs italic bg-gray-900 p-2 rounded text-gray-400 my-2"><span id="tt-desc"></span></p>
                 <p><span class="text-gray-500">Победа:</span> +<span id="tt-win" class="text-green-400 font-bold">0</span> pts</p>
                 <p><span class="text-gray-500">Поражение:</span> -<span id="tt-loss" class="text-red-400 font-bold">0</span> pts</p>
                 <p><span class="text-gray-500">Сложность:</span> <span id="tt-diff" class="text-purple-400">Легко</span></p>
@@ -300,64 +296,45 @@
         </div>
     </div>
 
-    <!-- Модальное окно: Настройки карты (РЕДАКТОР) -->
-    <div id="modal-map-settings" class="fixed inset-0 bg-black/80 z-[150] hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-gray-800 border-2 border-gray-500 rounded-xl w-full max-w-lg shadow-2xl p-6">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
-                <h2 class="text-2xl text-white font-bold"><i class="fa-solid fa-map-location-dot"></i> Редактор карты</h2>
-                <button onclick="closeMapSettings()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-2xl"></i></button>
+    <!-- Горизонтальная панель: Настройки карты (РЕДАКТОР) -->
+    <div id="modal-map-settings" class="fixed top-0 left-0 w-full bg-gray-800/95 border-b-4 border-gray-600 shadow-2xl z-[150] hidden backdrop-blur-md">
+        <div class="max-w-7xl mx-auto p-4 flex items-center justify-between gap-6">
+
+            <div class="flex items-center gap-4 border-r border-gray-600 pr-4">
+                <h2 class="text-xl text-white font-bold whitespace-nowrap"><i class="fa-solid fa-map-location-dot text-yellow-500"></i> Редактор карты</h2>
+                <button onclick="saveMapPreset()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-bold shadow transition text-sm whitespace-nowrap"><i class="fa-solid fa-save"></i> Сохранить пресет</button>
             </div>
 
-            <div class="space-y-4">
-                <!-- Пресеты -->
-                <div class="pb-4 border-b border-gray-700">
-                    <label class="block text-sm text-gray-400 mb-2">Сохраненные пресеты:</label>
-                    <div class="flex gap-2">
-                        <select id="preset-list" class="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white">
-                            <option value="">-- Выберите пресет --</option>
-                        </select>
-                        <button onclick="loadSelectedPreset()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Загрузить"><i class="fa-solid fa-download"></i></button>
-                        <button onclick="deleteSelectedPreset()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Удалить"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-
-                <!-- Шаблоны расстановки -->
-                <div>
-                    <label class="block text-sm text-gray-400 mb-2">Автоматические шаблоны:</label>
-                    <div class="flex gap-2">
-                        <button onclick="applyLayoutPreset('snake')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Змейка</button>
-                        <button onclick="applyLayoutPreset('spiral')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Спираль</button>
-                        <button onclick="applyLayoutPreset('border')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded shadow text-xs">Рамка</button>
-                        <button onclick="applyLayoutPreset('clear')" class="flex-1 bg-red-900 hover:bg-red-800 text-white py-2 rounded shadow text-xs">Сброс</button>
-                    </div>
-                </div>
-
-                <!-- Режим редактирования -->
-                <div class="pt-4 border-t border-gray-700 text-center flex flex-col gap-3">
-                    <div class="flex gap-2">
-                        <button id="btn-toggle-edit" onclick="toggleEditMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
-                            <i class="fa-solid fa-arrows-up-down-left-right"></i> Двигать
-                        </button>
-                        <button id="btn-toggle-link" onclick="toggleLinkMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
-                            <i class="fa-solid fa-link"></i> Связи
-                        </button>
-                        <button id="btn-toggle-add" onclick="toggleAddMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
-                            <i class="fa-solid fa-plus"></i> Клетка
-                        </button>
-                        <button id="btn-toggle-remove" onclick="toggleRemoveMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs">
-                            <i class="fa-solid fa-minus"></i> Удалить
-                        </button>
-                        <button id="btn-toggle-config" onclick="toggleConfigMode()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-2 py-3 rounded-lg font-bold shadow-lg transition text-xs" title="Настроить клетку">
-                            <i class="fa-solid fa-gear"></i> Данные
-                        </button>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="saveMapPreset()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold shadow-lg transition text-sm"><i class="fa-solid fa-save"></i> Сохранить пресет</button>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1" id="editor-hint">Выберите инструмент для настройки карты.</p>
-                </div>
+            <!-- Инструменты -->
+            <div class="flex items-center gap-2 flex-1 justify-center">
+                <span class="text-sm text-gray-400 font-bold mr-2 uppercase">Инструменты:</span>
+                <button id="btn-toggle-edit" onclick="toggleEditMode()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-bold shadow transition text-sm">
+                    <i class="fa-solid fa-arrows-up-down-left-right"></i> Двигать
+                </button>
+                <button id="btn-toggle-link" onclick="toggleLinkMode()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-bold shadow transition text-sm">
+                    <i class="fa-solid fa-link"></i> Связи
+                </button>
+                <button id="btn-toggle-add" onclick="toggleAddMode()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-bold shadow transition text-sm">
+                    <i class="fa-solid fa-plus"></i> Клетка
+                </button>
+                <button id="btn-toggle-remove" onclick="toggleRemoveMode()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-bold shadow transition text-sm">
+                    <i class="fa-solid fa-minus"></i> Удалить
+                </button>
+                <button onclick="applyLayoutPreset('clear')" class="bg-red-900 hover:bg-red-800 text-white px-3 py-2 rounded font-bold shadow text-sm ml-2" title="Очистить всё">Сброс</button>
             </div>
+
+            <!-- Пресеты -->
+            <div class="flex items-center gap-2 border-l border-gray-600 pl-4">
+                <select id="preset-list" class="bg-gray-900 border border-gray-600 rounded p-2 text-white w-48 text-sm">
+                    <option value="">-- Выберите пресет --</option>
+                </select>
+                <button onclick="loadSelectedPreset()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Загрузить"><i class="fa-solid fa-download"></i></button>
+                <button onclick="deleteSelectedPreset()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded shadow text-sm font-bold" title="Удалить"><i class="fa-solid fa-trash"></i></button>
+            </div>
+
+            <button onclick="closeMapSettings()" class="text-gray-400 hover:text-white ml-4 bg-gray-900 p-2 rounded-full w-10 h-10 flex items-center justify-center"><i class="fa-solid fa-times text-xl"></i></button>
         </div>
+        <div class="bg-gray-900 text-center py-1 text-xs text-yellow-400" id="editor-hint">Выберите инструмент для настройки карты.</div>
     </div>
 
     <!-- Модальное окно IFrame (Мини-игра) -->
@@ -372,69 +349,6 @@
             </div>
             <iframe id="task-iframe" class="w-full flex-1 bg-black" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
-    </div>
-
-    <!-- Модальное окно: Редактор Клетки -->
-    <div id="modal-cell-edit" class="fixed inset-0 bg-black/80 z-[300] hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-gray-800 border-2 border-yellow-500 rounded-xl w-full max-w-md shadow-2xl p-6">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
-                <h2 class="text-2xl text-white font-bold" id="cell-edit-title"><i class="fa-solid fa-gear"></i> Настройка клетки</h2>
-                <button onclick="closeCellEditModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-2xl"></i></button>
-            </div>
-
-            <div class="space-y-4">
-                <input type="hidden" id="edit-cell-id">
-
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Название локации:</label>
-                    <input type="text" id="edit-cell-name" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Тип задания:</label>
-                        <select id="edit-cell-type" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
-                            <option value="None">Отдых (None)</option>
-                            <option value="Physical">Physical</option>
-                            <option value="Audio-interactive">Audio</option>
-                            <option value="Screen-based">Screen-based</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Сложность:</label>
-                        <select id="edit-cell-diff" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
-                            <option value="—">—</option>
-                            <option value="Легко">Легко</option>
-                            <option value="Нормально">Нормально</option>
-                            <option value="Сложно">Сложно</option>
-                            <option value="Безумие">Безумие</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1 text-green-400">Награда (Победа):</label>
-                        <input type="number" id="edit-cell-win" min="0" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1 text-red-400">Штраф (Поражение):</label>
-                        <input type="number" id="edit-cell-loss" min="0" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-red-500">
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 pt-2">
-                    <input type="checkbox" id="edit-cell-repeat" class="w-5 h-5 accent-yellow-500 cursor-pointer">
-                    <label class="text-gray-300 cursor-pointer" for="edit-cell-repeat">Можно выполнять повторно (фарм)</label>
-                </div>
-
-                <div class="pt-4 mt-2 border-t border-gray-700">
-                    <button onclick="saveCellData()" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold shadow-lg transition">Сохранить изменения</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Магазин и Оповещения -->
     <div id="modal-shop" class="fixed inset-0 bg-black/80 z-[150] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-gray-800 border-2 border-purple-500 rounded-xl w-full max-w-2xl shadow-2xl p-6">
@@ -586,7 +500,7 @@
             if (totalCells < 10) totalCells = 10;
             if (totalCells > 100) totalCells = 100;
 
-            const taskPct = parseInt(document.getElementById('set-task-pct').value) || 0;
+
 
             // Обработка фона
             const file = document.getElementById('set-map-bg').files[0];
@@ -596,29 +510,39 @@
                 reader.readAsDataURL(file);
             }
 
+            // Загрузка Корзины Заданий
+            let cart = [];
+            let tasks = [];
+            try {
+                cart = JSON.parse(localStorage.getItem('gf_cart') || '[]');
+                tasks = JSON.parse(localStorage.getItem('gf_tasks') || '[]');
+            } catch(e){}
+
             // Генерация данных клеток
             cellsData = [];
-            const taskTypes = ['Physical', 'Audio-interactive', 'Screen-based'];
 
             for (let i = 0; i < totalCells; i++) {
                 let id = i + 1;
                 let isStart = (id === 1);
                 let isBoss = (id === totalCells);
 
-                // Определение: есть ли задание
-                let hasTask = (!isStart && !isBoss) ? (Math.random() * 100 < taskPct) : false;
-                let type = hasTask ? taskTypes[Math.floor(Math.random() * taskTypes.length)] : 'None';
+                // Ищем задание в корзине для этой клетки
+                let cartItem = cart.find(c => parseInt(c.cellId) === id);
+                let taskData = null;
+                if (cartItem && !isStart && !isBoss) {
+                    taskData = tasks.find(t => t.id === cartItem.taskId);
+                }
 
-                let diffs = ['Легко', 'Нормально', 'Сложно', 'Безумие'];
                 cellsData.push({
                     cell_id: id,
-                    zone_name: isStart ? "Лавка Чудес" : (isBoss ? "Странногедон" : "Зона " + Math.ceil(id / 10)),
-                    task_type: type,
-                    min_points: hasTask ? 10 + Math.floor(id / 5) : 0,
-                    max_points: hasTask ? 20 + Math.floor(id / 2) : 0,
-                    penalty_points: hasTask ? 5 + Math.floor(id / 4) : 0,
-                    is_repeatable: hasTask && Math.random() > 0.7,
-                    difficulty: hasTask ? diffs[Math.floor(Math.random() * diffs.length)] : '—',
+                    zone_name: taskData ? taskData.name : (isStart ? "Лавка Чудес" : (isBoss ? "Странногедон" : "Пустошь " + id)),
+                    task_type: taskData ? taskData.category : 'None',
+                    min_points: 0,
+                    max_points: taskData ? taskData.win : 0,
+                    penalty_points: taskData ? taskData.loss : 0,
+                    is_repeatable: taskData ? taskData.repeatable : false,
+                    difficulty: taskData ? taskData.difficulty : '—',
+                    task_desc: taskData ? taskData.desc : null,
                     required_item: id === 14 ? 'grappling_hook' : null,
                     locked_description: id === 14 ? "Для прохода дальше требуется Абордажный крюк!" : null,
                     coordinates: { x: 0, y: 0 },
@@ -641,7 +565,7 @@
             }
 
 
-            logEvent(`Игра началась! Поле сгенерировано: ${totalCells} клеток, вероятность заданий ${taskPct}%.`);
+            logEvent(`Игра началась! Поле сгенерировано: ${totalCells} клеток.`);
             updateHUDStyle();
         }
 
@@ -681,6 +605,12 @@
                     document.getElementById('tt-win').innerText = cellData.max_points;
                     document.getElementById('tt-loss').innerText = cellData.penalty_points || 0;
                     document.getElementById('tt-diff').innerText = cellData.difficulty || '—';
+                    if (cellData.task_desc) {
+                        document.getElementById('tt-desc-container').classList.remove('hidden');
+                        document.getElementById('tt-desc').innerText = cellData.task_desc;
+                    } else {
+                        document.getElementById('tt-desc-container').classList.add('hidden');
+                    }
 
                     const repeatEl = document.getElementById('tt-repeat');
                     if(cellData.is_repeatable) repeatEl.classList.remove('hidden');
@@ -721,7 +651,7 @@
         }
 
         // --- УНИВЕРСАЛЬНАЯ СИСТЕМА DRAG & DROP ---
-        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, isAddingMap = false, isRemovingMap = false, isConfiguringMap = false, linkStartCellId = null;
+        let activeDragEl = null, dragType = null, dragId = null, isEditingMap = false, isLinkingMap = false, isAddingMap = false, isRemovingMap = false,  linkStartCellId = null;
         let validMoves = new Set();
 
         mapContainer.addEventListener('mousedown', (e) => {
@@ -760,11 +690,6 @@
                 return;
             }
 
-            if (isConfiguringMap && cellEl) {
-                const cellId = parseInt(cellEl.innerText);
-                openCellEditModal(cellId);
-                return;
-            }
 
             if (isLinkingMap && cellEl) {
                 const cellId = parseInt(cellEl.innerText);
@@ -829,10 +754,8 @@
             if (dragType === 'token') {
                 activeDragEl.classList.remove('dragging');
                 const zoomLayer = document.getElementById('map-zoom-layer');
-                const isZoomed = zoomLayer.style.transform.includes('scale(1.3)');
-                const scale = isZoomed ? 1.3 : 1;
 
-                const rect = zoomLayer.getBoundingClientRect(); // Use actual rendered rect of the zoom layer
+                const rect = zoomLayer.getBoundingClientRect();
                 let x = e.clientX - rect.left, y = e.clientY - rect.top;
                 let closestCell = null, minDst = Infinity;
 
@@ -843,7 +766,7 @@
                     if (dst < minDst) { minDst = dst; closestCell = cell; }
                 });
 
-                if (closestCell && minDst < 60 * scale) handleTokenDrop(dragId, closestCell);
+                if (closestCell && minDst < 60) handleTokenDrop(dragId, closestCell);
                 else updateMapDrawings();
 
             } else if (dragType === 'cell') { activeDragEl.style.zIndex = 10; }
@@ -1025,24 +948,15 @@
 
 
 
-        function toggleConfigMode() {
-            const wasActive = isConfiguringMap;
-            resetAllEditorModes();
-            if (!wasActive) {
-                isConfiguringMap = true;
-                document.getElementById('btn-toggle-config').classList.replace('bg-gray-600', 'bg-green-600');
-                Object.values(cellElements).forEach(el => { el.style.cursor = 'pointer'; el.classList.add('border-yellow-500'); });
-                document.getElementById('editor-hint').innerText = "Кликните по клетке, чтобы настроить её. Закройте это окно.";
-            }
-        }
+
 
         function resetAllEditorModes() {
-            isEditingMap = false; isLinkingMap = false; isAddingMap = false; isRemovingMap = false; isConfiguringMap = false; linkStartCellId = null;
+            isEditingMap = false; isLinkingMap = false; isAddingMap = false; isRemovingMap = false;  linkStartCellId = null;
             document.getElementById('btn-toggle-edit').classList.replace('bg-green-600', 'bg-gray-600');
             document.getElementById('btn-toggle-link').classList.replace('bg-green-600', 'bg-gray-600');
             document.getElementById('btn-toggle-add').classList.replace('bg-green-600', 'bg-gray-600');
             document.getElementById('btn-toggle-remove').classList.replace('bg-green-600', 'bg-gray-600');
-            document.getElementById('btn-toggle-config').classList.replace('bg-green-600', 'bg-gray-600');
+
             Object.values(cellElements).forEach(el => { el.style.cursor = ''; el.classList.remove('editing', 'border-purple-500', 'bg-purple-300', 'border-red-500'); });
             document.getElementById('editor-hint').innerText = "Выберите инструмент для настройки карты.";
         }
@@ -1177,13 +1091,7 @@
                 if(cellElements[id]) cellElements[id].classList.add('highlight-move');
             });
 
-            // Zoom effect
-            const startCell = cellsData.find(c => c.cell_id === startPos);
-            if (startCell) {
-                const zoomLayer = document.getElementById('map-zoom-layer');
-                zoomLayer.style.transformOrigin = `${startCell.coordinates.x}% ${startCell.coordinates.y}%`;
-                zoomLayer.style.transform = 'scale(1.3)';
-            }
+
         }
 
         function finalizeRoll() {
@@ -1227,7 +1135,7 @@
             // Move is valid and happening
             Object.values(cellElements).forEach(el => el.classList.remove('highlight-move'));
             validMoves.clear();
-            document.getElementById('map-zoom-layer').style.transform = 'scale(1)'; // Reset zoom
+
 
             if (targetCell.required_item && !team.inventory.includes(targetCell.required_item)) {
                 showAlert("Доступ закрыт", targetCell.locked_description);
@@ -1287,45 +1195,7 @@
 
         // --- ЛОГ, МОДАЛКИ, ЗАДАНИЯ ---
 
-        function openCellEditModal(cellId) {
-            const cellData = cellsData.find(c => c.cell_id === cellId);
-            if (!cellData) return;
 
-            document.getElementById('modal-map-settings').classList.add('hidden');
-
-            document.getElementById('cell-edit-title').innerHTML = `<i class="fa-solid fa-gear"></i> Настройка клетки ${cellId}`;
-            document.getElementById('edit-cell-id').value = cellId;
-            document.getElementById('edit-cell-name').value = cellData.zone_name;
-            document.getElementById('edit-cell-type').value = cellData.task_type;
-            document.getElementById('edit-cell-diff').value = cellData.difficulty || '—';
-            document.getElementById('edit-cell-win').value = cellData.max_points;
-            document.getElementById('edit-cell-loss').value = cellData.penalty_points || 0;
-            document.getElementById('edit-cell-repeat').checked = !!cellData.is_repeatable;
-
-            document.getElementById('modal-cell-edit').classList.remove('hidden');
-        }
-
-        function closeCellEditModal() {
-            document.getElementById('modal-cell-edit').classList.add('hidden');
-            document.getElementById('modal-map-settings').classList.remove('hidden');
-        }
-
-        function saveCellData() {
-            const cellId = parseInt(document.getElementById('edit-cell-id').value);
-            const cellData = cellsData.find(c => c.cell_id === cellId);
-            if (!cellData) return;
-
-            cellData.zone_name = document.getElementById('edit-cell-name').value;
-            cellData.task_type = document.getElementById('edit-cell-type').value;
-            cellData.difficulty = document.getElementById('edit-cell-diff').value;
-            cellData.max_points = parseInt(document.getElementById('edit-cell-win').value) || 0;
-            cellData.penalty_points = parseInt(document.getElementById('edit-cell-loss').value) || 0;
-            cellData.is_repeatable = document.getElementById('edit-cell-repeat').checked;
-
-            closeCellEditModal();
-            initMapDOM(true); // Redraw to update classes
-            showAlert("Сохранено", `Данные клетки ${cellId} обновлены.`);
-        }
 
         function toggleLog() {
             const tab = document.getElementById('log-tab');
