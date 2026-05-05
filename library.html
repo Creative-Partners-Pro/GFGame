@@ -106,6 +106,16 @@
                     <textarea id="task-desc" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500"></textarea>
                 </div>
 
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Медиафайл (Фото/Видео/Аудио/HTML):</label>
+                    <div class="flex items-center gap-2">
+                        <input type="file" id="task-file" accept="image/*,video/*,audio/*,.html" class="flex-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 bg-gray-900 border border-gray-600 rounded p-1">
+                        <span id="task-file-status" class="text-xs text-green-400 hidden"><i class="fa-solid fa-check"></i> Загружен</span>
+                        <input type="hidden" id="task-media-data">
+                        <input type="hidden" id="task-media-type">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm text-gray-400 mb-1 text-green-400">Награда (+pts):</label>
@@ -186,6 +196,7 @@
 
             filtered.forEach(t => {
                 const isRepeat = t.repeatable ? '<i class="fa-solid fa-rotate-right text-blue-400 ml-2" title="Повторяемое"></i>' : '';
+                const hasMedia = t.mediaData ? '<i class="fa-solid fa-paperclip text-gray-400 ml-2" title="Прикреплен медиафайл"></i>' : '';
                 const item = document.createElement('div');
                 item.className = 'bg-gray-800 border border-gray-600 rounded-lg p-4 mb-4 flex gap-4 hover:border-yellow-500 transition shadow-lg';
                 item.innerHTML = `
@@ -196,7 +207,7 @@
                             <span class="text-xs text-green-400 font-bold ml-auto">+${t.win}</span>
                             <span class="text-xs text-red-400 font-bold">-${t.loss}</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white cursor-pointer hover:text-yellow-400" onclick="editTask('${t.id}')">${t.name} ${isRepeat}</h3>
+                        <h3 class="text-lg font-bold text-white cursor-pointer hover:text-yellow-400" onclick="editTask('${t.id}')">${t.name} ${isRepeat} ${hasMedia}</h3>
                         <p class="text-sm text-gray-400 mt-1 line-clamp-2">${t.desc}</p>
                     </div>
                     <div class="flex items-center">
@@ -228,6 +239,10 @@
             document.getElementById('task-loss').value = 5;
             document.getElementById('task-diff').value = 'Нормально';
             document.getElementById('task-repeat').checked = false;
+            document.getElementById('task-file').value = '';
+            document.getElementById('task-media-data').value = '';
+            document.getElementById('task-media-type').value = '';
+            document.getElementById('task-file-status').classList.add('hidden');
             document.getElementById('btn-del-task').classList.add('hidden');
             document.getElementById('modal-task').classList.remove('hidden');
         }
@@ -244,11 +259,35 @@
             document.getElementById('task-loss').value = t.loss;
             document.getElementById('task-diff').value = t.difficulty;
             document.getElementById('task-repeat').checked = t.repeatable;
+
+            document.getElementById('task-file').value = '';
+            document.getElementById('task-media-data').value = t.mediaData || '';
+            document.getElementById('task-media-type').value = t.mediaType || '';
+            if (t.mediaData) document.getElementById('task-file-status').classList.remove('hidden');
+            else document.getElementById('task-file-status').classList.add('hidden');
+
             document.getElementById('btn-del-task').classList.remove('hidden');
             document.getElementById('modal-task').classList.remove('hidden');
         }
 
         function closeTaskModal() { document.getElementById('modal-task').classList.add('hidden'); }
+
+
+        document.getElementById('task-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('task-media-data').value = event.target.result;
+                document.getElementById('task-media-type').value = file.type || (file.name.endsWith('.html') ? 'text/html' : '');
+                document.getElementById('task-file-status').classList.remove('hidden');
+            };
+            if (file.name.endsWith('.html')) {
+                reader.readAsText(file); // Store HTML as text
+            } else {
+                reader.readAsDataURL(file); // Store media as base64
+            }
+        });
 
         function saveTask() {
             const id = document.getElementById('task-id').value || 't_' + Date.now();
@@ -263,7 +302,9 @@
                 win: parseInt(document.getElementById('task-win').value) || 0,
                 loss: parseInt(document.getElementById('task-loss').value) || 0,
                 difficulty: document.getElementById('task-diff').value,
-                repeatable: document.getElementById('task-repeat').checked
+                repeatable: document.getElementById('task-repeat').checked,
+                mediaData: document.getElementById('task-media-data').value,
+                mediaType: document.getElementById('task-media-type').value
             };
 
             const idx = tasks.findIndex(x => x.id === id);

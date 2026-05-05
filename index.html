@@ -349,6 +349,7 @@
             </div>
             <iframe id="task-iframe" class="w-full flex-1 bg-black" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
+    </div>
     <!-- Магазин и Оповещения -->
     <div id="modal-shop" class="fixed inset-0 bg-black/80 z-[150] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-gray-800 border-2 border-purple-500 rounded-xl w-full max-w-2xl shadow-2xl p-6">
@@ -543,6 +544,8 @@
                     is_repeatable: taskData ? taskData.repeatable : false,
                     difficulty: taskData ? taskData.difficulty : '—',
                     task_desc: taskData ? taskData.desc : null,
+                    mediaData: taskData ? taskData.mediaData : null,
+                    mediaType: taskData ? taskData.mediaType : null,
                     required_item: id === 14 ? 'grappling_hook' : null,
                     locked_description: id === 14 ? "Для прохода дальше требуется Абордажный крюк!" : null,
                     coordinates: { x: 0, y: 0 },
@@ -1212,33 +1215,56 @@
         }
 
         function triggerTask(cell) {
-            document.getElementById('task-title').innerText = `Клетка ${cell.cell_id} — Задание`;
+            document.getElementById('task-title').innerText = cell.zone_name;
             document.getElementById('modal-task').classList.remove('hidden');
             const iframe = document.getElementById('task-iframe');
+
+            let mediaContent = '';
+            if (cell.mediaData) {
+                if (cell.mediaType === 'text/html') {
+                    mediaContent = `<div class="w-full max-w-2xl bg-white text-black p-4 rounded text-left overflow-auto" style="max-height: 40vh;">${cell.mediaData}</div>`;
+                } else if (cell.mediaType.startsWith('image/')) {
+                    mediaContent = `<img src="${cell.mediaData}" class="max-w-full max-h-[40vh] object-contain rounded shadow-lg mb-4">`;
+                } else if (cell.mediaType.startsWith('video/')) {
+                    mediaContent = `<video src="${cell.mediaData}" controls class="max-w-full max-h-[40vh] rounded shadow-lg mb-4"></video>`;
+                } else if (cell.mediaType.startsWith('audio/')) {
+                    mediaContent = `<audio src="${cell.mediaData}" controls class="w-full max-w-md mb-4"></audio>`;
+                }
+            }
 
             iframe.srcdoc = `
                 <html lang="ru">
                 <head><script src="https://cdn.tailwindcss.com"><\/script></head>
-                <body class="bg-gray-900 text-white flex flex-col items-center justify-center h-full p-8 text-center">
-                    <h1 class="text-3xl text-yellow-400 mb-2 font-bold">Вызов от Ведущего</h1>
-                    <p class="text-gray-400 mb-8">Выполните задание в реальной жизни.</p>
-                    <button onclick="parent.postMessage({type:'TASK_RESULT', success:true, pts: ${cell.max_points}}, '*')" class="bg-green-600 hover:bg-green-500 p-4 rounded-xl mb-4 w-64 text-xl font-bold shadow-lg transition transform hover:scale-105">Успех (+${cell.max_points} pts)</button>
-                    <button onclick="parent.postMessage({type:'TASK_RESULT', success:false, pts: 0}, '*')" class="bg-red-600 hover:bg-red-500 p-4 rounded-xl w-64 text-xl font-bold shadow-lg transition transform hover:scale-105">Провал (0 pts)</button>
+                <body class="bg-gray-900 text-white flex flex-col items-center justify-center h-full p-8 text-center overflow-x-hidden">
+                    <h1 class="text-3xl text-yellow-400 mb-2 font-bold">${cell.zone_name}</h1>
+                    <p class="text-gray-300 mb-6 text-lg max-w-2xl whitespace-pre-wrap">${cell.task_desc || "Выполните задание."}</p>
+                    ${mediaContent}
+                    <div class="flex gap-4 mt-auto pt-8">
+                        <button onclick="parent.postMessage({type:'TASK_RESULT', success:true, pts: ${cell.max_points}}, '*')" class="bg-green-600 hover:bg-green-500 py-3 px-8 rounded-xl text-lg font-bold shadow-lg transition transform hover:scale-105">Успех (+${cell.max_points} pts)</button>
+                        <button onclick="parent.postMessage({type:'TASK_RESULT', success:false, pts: ${cell.penalty_points}}, '*')" class="bg-red-600 hover:bg-red-500 py-3 px-8 rounded-xl text-lg font-bold shadow-lg transition transform hover:scale-105">Провал (-${cell.penalty_points} pts)</button>
+                    </div>
                 </body></html>`;
         }
 
         window.addEventListener('message', (e) => {
             if (e.data.type === 'TASK_RESULT') {
                 closeTaskModal();
+                const team = gameState[gameState.currentTurn];
                 if (e.data.success) {
-                    gameState[gameState.currentTurn].points += e.data.pts;
-                    document.getElementById(`${gameState.currentTurn}-pts`).innerText = gameState[gameState.currentTurn].points;
+                    team.points += e.data.pts;
+                    document.getElementById(`${gameState.currentTurn}-pts`).innerText = team.points;
                     showAlert("Успех!", `Получено ${e.data.pts} магических поинтов.`);
-                    logEvent(`${gameState[gameState.currentTurn].name} успешно проходит задание (+${e.data.pts} pts).`);
+                    logEvent(`${team.name} успешно проходит задание (+${e.data.pts} pts).`);
                 } else {
-                    showAlert("Провал", "Очки не начислены.");
-                    logEvent(`${gameState[gameState.currentTurn].name} проваливает задание.`);
+                    team.points = Math.max(0, team.points - e.data.pts); // Subtract penalty, floor at 0
+                    document.getElementById(`${gameState.currentTurn}-pts`).innerText = team.points;
+                    showAlert("Провал", `Потеряно ${e.data.pts} поинтов.`);
+                    logEvent(`${team.name} проваливает задание (-${e.data.pts} pts).`);
                 }
+
+                // TODO: restrict repeat logic if cell.is_repeatable is false.
+                // We'd need to mark the cell as 'completed' in game state.
+
                 switchTurn();
             }
         });
