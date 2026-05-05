@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Библиотека Заданий - Gravity Falls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+        body {
+            font-family: 'Russo One', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #2d3748; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-900">
+
+    <!-- Левое меню (Категории) -->
+    <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-700 text-center">
+            <h1 class="text-xl text-yellow-500">Библиотека Заданий</h1>
+            <a href="index.html" class="text-sm text-blue-400 hover:text-blue-300 mt-2 inline-block"><i class="fa-solid fa-arrow-left"></i> Назад к игре</a>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2" id="category-list">
+            <!-- Категории генерируются JS -->
+        </nav>
+        <div class="p-4 border-t border-gray-700">
+            <button onclick="openTaskModal()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded shadow font-bold"><i class="fa-solid fa-plus"></i> Создать задание</button>
+        </div>
+    </aside>
+
+    <!-- Центр (Список заданий) -->
+    <main class="flex-1 flex flex-col relative">
+        <header class="p-4 border-b border-gray-700 bg-gray-800/50 flex justify-between items-center">
+            <h2 id="current-category-title" class="text-2xl font-bold text-white">Все задания</h2>
+            <div class="text-gray-400 text-sm">Нажмите <span class="text-green-500 font-bold"><i class="fa-solid fa-cart-plus"></i></span> чтобы добавить в игру</div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar" id="task-list">
+            <!-- Задания генерируются JS -->
+        </div>
+    </main>
+
+    <!-- Правая панель (Корзина для игры) -->
+    <aside class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-purple-900/30">
+            <h2 class="text-xl text-purple-400"><i class="fa-solid fa-cart-shopping"></i> Корзина игры</h2>
+            <span id="cart-count" class="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">0</span>
+        </div>
+
+        <div class="p-4 border-b border-gray-700">
+            <label class="block text-xs text-gray-400 mb-1">Сохраненные наборы (пресеты):</label>
+            <div class="flex gap-1">
+                <select id="cart-preset-list" class="flex-1 bg-gray-900 border border-gray-600 rounded p-1 text-white text-xs">
+                    <option value="">-- Выбрать --</option>
+                </select>
+                <button onclick="loadCartPreset()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 rounded" title="Загрузить"><i class="fa-solid fa-download text-xs"></i></button>
+                <button onclick="saveCartPreset()" class="bg-green-600 hover:bg-green-500 text-white px-2 rounded" title="Сохранить"><i class="fa-solid fa-save text-xs"></i></button>
+                <button onclick="deleteCartPreset()" class="bg-red-600 hover:bg-red-500 text-white px-2 rounded" title="Удалить"><i class="fa-solid fa-trash text-xs"></i></button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" id="cart-list">
+            <!-- Корзина генерируется JS -->
+            <div class="text-center text-gray-500 text-sm mt-10">Корзина пуста. Добавьте задания из библиотеки.</div>
+        </div>
+        <div class="p-4 border-t border-gray-700 text-xs text-gray-400 text-center">
+            Назначьте номера клеток для заданий. Эти задания появятся в игре на указанных позициях.
+        </div>
+    </aside>
+
+    <!-- Модальное окно (Создание/Редактирование Задания) -->
+    <div id="modal-task" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-gray-800 border-2 border-yellow-500 rounded-xl w-full max-w-lg shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <h2 class="text-xl text-white font-bold" id="task-modal-title">Новое задание</h2>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <input type="hidden" id="task-id">
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Название задания:</label>
+                    <input type="text" id="task-name" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Категория:</label>
+                    <select id="task-cat" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
+                        <option value="Активные">Активные</option>
+                        <option value="Вокальные">Вокальные</option>
+                        <option value="Танцевальные">Танцевальные</option>
+                        <option value="Музыкальные">Музыкальные</option>
+                        <option value="Логика и внимание">Логика и внимание</option>
+                        <option value="Разное">Разное</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Описание (текст):</label>
+                    <textarea id="task-desc" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1 text-green-400">Награда (+pts):</label>
+                        <input type="number" id="task-win" min="0" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1 text-red-400">Штраф (-pts):</label>
+                        <input type="number" id="task-loss" min="0" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-red-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Сложность:</label>
+                        <select id="task-diff" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-yellow-500">
+                            <option value="Легко">Легко</option>
+                            <option value="Нормально">Нормально</option>
+                            <option value="Сложно">Сложно</option>
+                            <option value="Безумие">Безумие</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end pb-2">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                            <input type="checkbox" id="task-repeat" class="w-4 h-4 accent-yellow-500">
+                            Можно повторять
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-2 border-t border-gray-700 flex gap-2">
+                    <button id="btn-save-task" onclick="saveTask()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold shadow transition">Сохранить</button>
+                    <button id="btn-del-task" onclick="deleteTask()" class="hidden bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow transition"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ДАННЫЕ ---
+        let tasks = JSON.parse(localStorage.getItem('gf_tasks') || '[]');
+        let cart = JSON.parse(localStorage.getItem('gf_cart') || '[]');
+        let currentCategory = 'Все';
+
+        const categories = ['Все', 'Активные', 'Вокальные', 'Танцевальные', 'Музыкальные', 'Логика и внимание', 'Разное'];
+
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        function init() {
+            renderCategories();
+            renderTasks();
+            renderCart();
+            loadCartPresetsList();
+        }
+
+        // --- БИБЛИОТЕКА ---
+        function renderCategories() {
+            const list = document.getElementById('category-list');
+            list.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition ${currentCategory === cat ? 'bg-yellow-600 text-black shadow-lg' : 'text-gray-400 hover:bg-gray-700 hover:text-white'}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentCategory = cat; init(); };
+                list.appendChild(btn);
+            });
+            document.getElementById('current-category-title').innerText = currentCategory === 'Все' ? 'Все задания' : `Категория: ${currentCategory}`;
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+
+            const filtered = currentCategory === 'Все' ? tasks : tasks.filter(t => t.category === currentCategory);
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 mt-10">В этой категории нет заданий. Создайте новое!</div>';
+                return;
+            }
+
+            filtered.forEach(t => {
+                const isRepeat = t.repeatable ? '<i class="fa-solid fa-rotate-right text-blue-400 ml-2" title="Повторяемое"></i>' : '';
+                const item = document.createElement('div');
+                item.className = 'bg-gray-800 border border-gray-600 rounded-lg p-4 mb-4 flex gap-4 hover:border-yellow-500 transition shadow-lg';
+                item.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">${t.category}</span>
+                            <span class="text-xs bg-gray-700 text-${getDiffColor(t.difficulty)}-400 px-2 py-0.5 rounded">${t.difficulty}</span>
+                            <span class="text-xs text-green-400 font-bold ml-auto">+${t.win}</span>
+                            <span class="text-xs text-red-400 font-bold">-${t.loss}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white cursor-pointer hover:text-yellow-400" onclick="editTask('${t.id}')">${t.name} ${isRepeat}</h3>
+                        <p class="text-sm text-gray-400 mt-1 line-clamp-2">${t.desc}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <button onclick="addToCart('${t.id}')" class="bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-110 active:scale-95" title="В корзину игры">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function getDiffColor(d) {
+            if(d === 'Легко') return 'blue';
+            if(d === 'Нормально') return 'green';
+            if(d === 'Сложно') return 'yellow';
+            if(d === 'Безумие') return 'red';
+            return 'gray';
+        }
+
+        // --- МОДАЛКА ЗАДАНИЯ ---
+        function openTaskModal() {
+            document.getElementById('task-modal-title').innerText = 'Новое задание';
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-desc').value = '';
+            document.getElementById('task-cat').value = currentCategory === 'Все' ? 'Активные' : currentCategory;
+            document.getElementById('task-win').value = 10;
+            document.getElementById('task-loss').value = 5;
+            document.getElementById('task-diff').value = 'Нормально';
+            document.getElementById('task-repeat').checked = false;
+            document.getElementById('btn-del-task').classList.add('hidden');
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+
+        function editTask(id) {
+            const t = tasks.find(x => x.id === id);
+            if(!t) return;
+            document.getElementById('task-modal-title').innerText = 'Редактировать задание';
+            document.getElementById('task-id').value = t.id;
+            document.getElementById('task-name').value = t.name;
+            document.getElementById('task-desc').value = t.desc;
+            document.getElementById('task-cat').value = t.category;
+            document.getElementById('task-win').value = t.win;
+            document.getElementById('task-loss').value = t.loss;
+            document.getElementById('task-diff').value = t.difficulty;
+            document.getElementById('task-repeat').checked = t.repeatable;
+            document.getElementById('btn-del-task').classList.remove('hidden');
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+
+        function closeTaskModal() { document.getElementById('modal-task').classList.add('hidden'); }
+
+        function saveTask() {
+            const id = document.getElementById('task-id').value || 't_' + Date.now();
+            const name = document.getElementById('task-name').value.trim();
+            if(!name) return alert("Введите название!");
+
+            const t = {
+                id: id,
+                name: name,
+                category: document.getElementById('task-cat').value,
+                desc: document.getElementById('task-desc').value,
+                win: parseInt(document.getElementById('task-win').value) || 0,
+                loss: parseInt(document.getElementById('task-loss').value) || 0,
+                difficulty: document.getElementById('task-diff').value,
+                repeatable: document.getElementById('task-repeat').checked
+            };
+
+            const idx = tasks.findIndex(x => x.id === id);
+            if(idx > -1) tasks[idx] = t;
+            else tasks.push(t);
+
+            localStorage.setItem('gf_tasks', JSON.stringify(tasks));
+            closeTaskModal();
+            init();
+        }
+
+        function deleteTask() {
+            if(!confirm("Точно удалить?")) return;
+            const id = document.getElementById('task-id').value;
+            tasks = tasks.filter(t => t.id !== id);
+
+            // Remove from cart too
+            cart = cart.filter(c => c.taskId !== id);
+            localStorage.setItem('gf_cart', JSON.stringify(cart));
+
+            localStorage.setItem('gf_tasks', JSON.stringify(tasks));
+            closeTaskModal();
+            init();
+        }
+
+
+        // --- КОРЗИНА ИГРЫ ---
+        function addToCart(taskId) {
+            cart.push({ taskId: taskId, cellId: '' });
+            saveCart();
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCart();
+            renderCart();
+        }
+
+        function updateCartCell(index, val) {
+            cart[index].cellId = val;
+            saveCart();
+        }
+
+        function saveCart() {
+            localStorage.setItem('gf_cart', JSON.stringify(cart));
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            list.innerHTML = '';
+            document.getElementById('cart-count').innerText = cart.length;
+
+            if (cart.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 text-sm mt-10">Корзина пуста. Добавьте задания из библиотеки.</div>';
+                return;
+            }
+
+            cart.forEach((cItem, i) => {
+                const t = tasks.find(x => x.id === cItem.taskId);
+                if (!t) return; // Task deleted
+
+                const item = document.createElement('div');
+                item.className = 'bg-gray-900 border border-purple-500/50 rounded p-3 flex flex-col gap-2 relative shadow-md';
+                item.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h4 class="text-white font-bold text-sm leading-tight pr-6">${t.name}</h4>
+                        <button onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-400 absolute top-2 right-2"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2 mt-auto">
+                        <span class="text-xs text-gray-400">Клетка №:</span>
+                        <input type="number" min="2" max="100" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm outline-none focus:border-purple-500" value="${cItem.cellId}" onchange="updateCartCell(${i}, this.value)" placeholder="Напр. 5">
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // --- ПРЕСЕТЫ КОРЗИНЫ ---
+        function loadCartPresetsList() {
+            const select = document.getElementById('cart-preset-list');
+            select.innerHTML = '<option value="">-- Выбрать --</option>';
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_cart_presets') || '[]');
+                presets.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.innerText = p.name;
+                    select.appendChild(opt);
+                });
+            } catch(e) {}
+        }
+
+        function saveCartPreset() {
+            if(cart.length === 0) return alert("Корзина пуста!");
+            const name = prompt("Введите имя набора заданий:");
+            if (!name) return;
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_cart_presets') || '[]');
+                const idx = presets.findIndex(p => p.name === name);
+                if(idx > -1) presets[idx].cart = cart;
+                else presets.push({ name, cart });
+                localStorage.setItem('gf_cart_presets', JSON.stringify(presets));
+                loadCartPresetsList();
+                alert(`Набор "${name}" сохранен!`);
+            } catch(e) {}
+        }
+
+        function loadCartPreset() {
+            const name = document.getElementById('cart-preset-list').value;
+            if(!name) return alert("Выберите набор из списка.");
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_cart_presets') || '[]');
+                const p = presets.find(x => x.name === name);
+                if (p) {
+                    cart = p.cart;
+                    saveCart();
+                    renderCart();
+                }
+            } catch(e) {}
+        }
+
+        function deleteCartPreset() {
+            const name = document.getElementById('cart-preset-list').value;
+            if(!name) return;
+            if(!confirm(`Удалить набор "${name}"?`)) return;
+            try {
+                let presets = JSON.parse(localStorage.getItem('gf_cart_presets') || '[]');
+                presets = presets.filter(p => p.name !== name);
+                localStorage.setItem('gf_cart_presets', JSON.stringify(presets));
+                loadCartPresetsList();
+            } catch(e) {}
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>
